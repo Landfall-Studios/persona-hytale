@@ -197,7 +197,7 @@ public class ApiConnectionManagerImpl implements ApiConnectionManager {
         int maxSize = StatecraftConfig.QUEUE_MAX_SIZE.get();
 
         if (operationQueue.size() >= maxSize) {
-            LOGGER.atWarning().log("[ConnectionManager] Queue is full ({}/{}), rejecting operation: {}",
+            LOGGER.atWarning().log("[ConnectionManager] Queue is full (%d/%d), rejecting operation: %s",
                 operationQueue.size(), maxSize, operation.getDescription());
             return false;
         }
@@ -208,7 +208,7 @@ public class ApiConnectionManagerImpl implements ApiConnectionManager {
         // Persist to disk
         OperationQueueStore.save(new ArrayList<>(operationQueue));
 
-        LOGGER.atInfo().log("[ConnectionManager] Queued operation: {} (queue size: {})",
+        LOGGER.atInfo().log("[ConnectionManager] Queued operation: %s (queue size: %d)",
             operation.getDescription(), operationQueue.size());
 
         return true;
@@ -235,7 +235,7 @@ public class ApiConnectionManagerImpl implements ApiConnectionManager {
             return 0;
         }
 
-        LOGGER.atInfo().log("[ConnectionManager] Processing {} queued operations", operationQueue.size());
+        LOGGER.atInfo().log("[ConnectionManager] Processing %d queued operations", operationQueue.size());
 
         int processed = 0;
         int ttlHours = StatecraftConfig.QUEUE_OPERATION_TTL_HOURS.get();
@@ -246,7 +246,7 @@ public class ApiConnectionManagerImpl implements ApiConnectionManager {
         for (QueuedOperation op : operationQueue) {
             // Check if expired
             if (op.isExpired(ttlHours)) {
-                LOGGER.atWarning().log("[ConnectionManager] Operation expired, discarding: {}", op.getDescription());
+                LOGGER.atWarning().log("[ConnectionManager] Operation expired, discarding: %s", op.getDescription());
                 toRemove.add(op);
                 totalFailed.incrementAndGet();
                 continue;
@@ -259,19 +259,19 @@ public class ApiConnectionManagerImpl implements ApiConnectionManager {
                 toRemove.add(op);
                 processed++;
                 totalProcessed.incrementAndGet();
-                LOGGER.atFine().log("[ConnectionManager] Successfully processed: {}", op.getDescription());
+                LOGGER.atFine().log("[ConnectionManager] Successfully processed: %s", op.getDescription());
             } else if (op.canRetry()) {
                 // Replace with retry version
                 int index = operationQueue.indexOf(op);
                 if (index >= 0) {
                     operationQueue.set(index, op.withRetry());
                 }
-                LOGGER.atFine().log("[ConnectionManager] Will retry: {} (attempt {})",
+                LOGGER.atFine().log("[ConnectionManager] Will retry: %s (attempt %d)",
                     op.getDescription(), op.retryCount() + 1);
             } else {
                 toRemove.add(op);
                 totalFailed.incrementAndGet();
-                LOGGER.atSevere().log("[ConnectionManager] Max retries exceeded, discarding: {}", op.getDescription());
+                LOGGER.atSevere().log("[ConnectionManager] Max retries exceeded, discarding: %s", op.getDescription());
             }
         }
 
@@ -297,14 +297,14 @@ public class ApiConnectionManagerImpl implements ApiConnectionManager {
                     yield ApiResult.validationError("Cannot retry password operations");
                 }
                 default -> {
-                    LOGGER.atWarning().log("[ConnectionManager] Unsupported operation type: {}", op.type());
+                    LOGGER.atWarning().log("[ConnectionManager] Unsupported operation type: %s", op.type());
                     yield ApiResult.validationError("Unsupported operation type");
                 }
             };
 
             return result.isSuccess();
         } catch (Exception e) {
-            LOGGER.atSevere().log("[ConnectionManager] Error executing operation: {}", op.getDescription(), e);
+            LOGGER.atSevere().log("[ConnectionManager] Error executing operation: %s", op.getDescription(), e);
             return false;
         }
     }
@@ -314,7 +314,7 @@ public class ApiConnectionManagerImpl implements ApiConnectionManager {
         int size = operationQueue.size();
         operationQueue.clear();
         OperationQueueStore.delete();
-        LOGGER.atWarning().log("[ConnectionManager] Cleared {} queued operations", size);
+        LOGGER.atWarning().log("[ConnectionManager] Cleared %d queued operations", size);
     }
 
     @Override
@@ -332,7 +332,7 @@ public class ApiConnectionManagerImpl implements ApiConnectionManager {
             try {
                 listener.accept(newState);
             } catch (Exception e) {
-                LOGGER.atSevere().log("[ConnectionManager] Error notifying state change listener", e);
+                LOGGER.atSevere().log("[ConnectionManager] Error notifying state change listener: %s", e);
             }
         }
     }
