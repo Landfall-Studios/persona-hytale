@@ -5,6 +5,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.protocol.PlayerSkin;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.container.CombinedItemContainer;
@@ -13,6 +14,7 @@ import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
+import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import world.landfall.statecraft.StatecraftMod;
@@ -65,17 +67,21 @@ public class CharacterOperations {
 
 
         world.execute(() -> {
+            var savedStats = stats.clone();
             characterTable.TABLE.put(oldCharacter.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
-                UtilCodecs.PlayerInventory.fromPlayer(player, entityStore), stats, new PlayerSkin(), playerPos
+                UtilCodecs.PlayerInventory.fromPlayer(player, entityStore), savedStats, characterTable.TABLE.get(oldCharacter.getCharacterId()).playerSkin, playerPos
             ));
             if (oldCharacter.getCharacterId() == characterId) return;
-            System.out.println("DEBUG -- Old position: "+playerTransform.getPosition()+" New position: "+newCharacterData.position);
-            System.out.println("DEBUG -- Old ID: "+oldCharacter.getCharacterId()+" New ID: "+characterId);
+            playerRef.sendMessage(Message.raw("StatMap Data: "+stats.get(DefaultEntityStatTypes.getHealth())+" "+newCharacterData.stats.get(DefaultEntityStatTypes.getHealth())));
             entityStore.addComponent(player, Teleport.getComponentType(), new Teleport(newCharacterData.position, new Vector3f()));
 
             newCharacterData.inventory.applyToPlayer(player, entityStore);
+            var newStats = newCharacterData.stats;
+            var oldStats = entityStore.getComponent(player, EntityStatMap.getComponentType());
 
-            entityStore.putComponent(player, EntityStatMap.getComponentType(), newCharacterData.stats.clone());
+            for (int i = 0; i < newStats.size(); i++) {
+                oldStats.setStatValue(i, newStats.get(i).get());
+            }
 
             characterList.forEach(c -> {if (c.getCharacterId() == characterId)
                 entityStore.putComponent(player, StatecraftMod.CHARACTER_COMPONENT, new CharacterComponent(c));});

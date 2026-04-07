@@ -66,9 +66,14 @@ public class StatecraftComponentAddedSystem extends RefSystem<EntityStore> {
 
 //        var inventory = store.getComponent(ref, InventoryComponent.Storage.getComponentType()).getInventory();
         world.execute(() -> {
+
             if (characterComponent == null) return;
+            var newStats = new EntityStatMap();
+            for (int i = 0; i < stats.size(); i++) {
+                newStats.setStatValue(i, stats.get(i).get());
+            }
             table.put(characterComponent.character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
-                    UtilCodecs.PlayerInventory.fromPlayer(ref, store), stats, new PlayerSkin(), position
+                    UtilCodecs.PlayerInventory.fromPlayer(ref, store), newStats, new PlayerSkin(), position
             ));
             for (var x : table.entrySet())
                 System.out.println("DEBUG -- "+x.getKey() + " " + x.getValue().position);
