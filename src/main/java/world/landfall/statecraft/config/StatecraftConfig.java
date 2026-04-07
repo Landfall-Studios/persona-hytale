@@ -25,7 +25,7 @@ public class StatecraftConfig {
     public static BuilderCodec<StatecraftConfig> CODEC;
 
     // API Configuration
-    public static final Supplier<String> API_URL = configValue("api_url", ConfigType.STRING, "https://api.statecraft.landfall.world");
+    public static final Supplier<String> API_URL = configValue("api_url", ConfigType.STRING, "https://api.statecraft.landfall.world/api/v1");
     public static final Supplier<String> API_KEY = configValue("api_key", ConfigType.STRING, "145f8a1fdc85487ef520433f9e0c4e44471bcf115753933ff0a1c46d47d2d786");
     public static final Supplier<Integer> SYNC_INTERVAL_SECONDS = configValue("sync_interval_seconds", ConfigType.INTEGER, 60);
     public static final Supplier<Integer> CONNECTION_TIMEOUT_SECONDS = configValue("connection_timeout_seconds", ConfigType.INTEGER, 60);

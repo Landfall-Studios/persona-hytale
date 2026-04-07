@@ -22,6 +22,9 @@ public class CharacterComponent implements Component<EntityStore> {
     public CharacterComponent() {
         character = new StatecraftCharacter(0, "", UUID.randomUUID());
     }
+    public CharacterComponent(StatecraftCharacter character) {
+        this.character = character;
+    }
     private CharacterComponent(CharacterComponent component) {
         character = component.character;
     }

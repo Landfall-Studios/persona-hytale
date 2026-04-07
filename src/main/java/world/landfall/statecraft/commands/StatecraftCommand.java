@@ -28,16 +28,20 @@ public class StatecraftCommand extends AbstractPlayerCommand {
 
     private enum Commands {
         password,
-        list
+        list,
+        create,
+        swap
     }
     private final RequiredArg<Commands> commandArg;
     private final OptionalArg<String> passwordArg;
+    private final OptionalArg<String> characterArg;
 
     public StatecraftCommand() {
         super("statecraft", "Command for interacting with Statecraft.");
         this.setPermissionGroup(GameMode.Creative);
         commandArg = this.withRequiredArg("command", "Which command to run", ArgTypes.forEnum("commands", Commands.class));
         passwordArg = this.withOptionalArg("password", "The password to be set", ArgTypes.STRING);
+        characterArg = this.withOptionalArg("name", "The name of the character to create", ArgTypes.STRING);
     }
 
     @Override
@@ -70,20 +74,54 @@ public class StatecraftCommand extends AbstractPlayerCommand {
                 });
 
             }
+            case create -> {
+                if (!player.isValid()) {
+                }
+                var characterList = CharacterOperations.getCharacters(player);
+                if (!commandContext.provided(characterArg)) {
+                    commandContext.sendMessage(Message.raw("You must provide the name for the character to create it!"));
+                    return;
+                }
+                var name = sanitize(commandContext.get(characterArg));
+                var result = CharacterOperations.createCharacter(player, name);
+                if (result != null) {
+                    commandContext.sendMessage(Message.raw("Successfully created a character!"));
+                } else
+                    commandContext.sendMessage(Message.raw("Internal server error: could not create character").color(Color.RED));
+            }
+            case swap -> {
+                if (!player.isValid()) {
+                    commandContext.sendMessage(Message.raw("Cannot list characters; not running command as a player!"));
+                    return;
+                }
+                var characterList = CharacterOperations.getCharacters(player);
+                if (!commandContext.provided(characterArg)) {
+                    commandContext.sendMessage(Message.raw("You must provide the name for the character to swap to it!"));
+                    return;
+                }
+                var name = sanitize(commandContext.get(characterArg));
+                for (var x : characterList) {
+                    if (x.getDisplayName().equals(name)) {
+                        CharacterOperations.switchCharacters(player, x.getCharacterId());
+                        commandContext.sendMessage(Message.raw("Swapping to character: "+x.getDisplayName()));
+                        break;
+                    }
+                }
+            }
         }
     }
     private static int help(CommandContext context) {
         context.sendMessage(Message.raw("§6=== Statecraft Commands ==="));
-        context.sendMessage(Message.raw("§e/statecraft password <password>§f - Set your UUID password for web panel access"));
-        context.sendMessage(Message.raw("§e/statecraft checkdisplaynames§f - Check your tracked display names"));
-        context.sendMessage(Message.raw("§e/statecraft updatedisplaynames§f - Update your display name tracking"));
+        context.sendMessage(Message.raw("§e/statecraft password --password <password>§f - Set your UUID password for web panel access"));
+        context.sendMessage(Message.raw("§e/statecraft list§f - List your characters"));
+        context.sendMessage(Message.raw("§e/statecraft create --name \"<name>\"§f - Create a character"));
         context.sendMessage(Message.raw("§7Your UUID password allows you to log into the web panel and select from your characters."));
         return 1;
     }
 
     private static int passwordHelp(CommandContext context) {
         context.sendMessage(Message.raw("§6=== Password Command ==="));
-        context.sendMessage(Message.raw("§e/statecraft password <password>§f - Set your UUID password"));
+        context.sendMessage(Message.raw("§e/statecraft password --password <password>§f - Set your UUID password"));
         context.sendMessage(Message.raw("§7This password is tied to your UUID and allows web panel access."));
         context.sendMessage(Message.raw("§7You can then select from any of your characters in the web panel."));
         context.sendMessage(Message.raw("§7Password must be at least 6 characters long."));
@@ -123,5 +161,10 @@ public class StatecraftCommand extends AbstractPlayerCommand {
             context.sendMessage(Message.raw("Could not set the password on the server."));
         }
         return 0;
+    }
+    private static String sanitize(String word) {
+        if (word.charAt(0) == '"' && word.charAt(word.length()-1) == '"')
+            return word.substring(1, word.length()-1);
+        return word;
     }
 }

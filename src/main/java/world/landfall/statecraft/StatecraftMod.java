@@ -20,6 +20,7 @@ import world.landfall.statecraft.components.StatecraftComponent;
 import world.landfall.statecraft.config.StatecraftConfig;
 import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 import world.landfall.statecraft.systems.ModPlayerJoinSystem;
+import world.landfall.statecraft.systems.StatecraftComponentAddedSystem;
 import world.landfall.statecraft.systems.StatecraftComponentUpdateSystem;
 
 public class StatecraftMod extends JavaPlugin {
@@ -64,6 +65,7 @@ public class StatecraftMod extends JavaPlugin {
 
         this.getEntityStoreRegistry().registerSystem(new ModPlayerJoinSystem());
         this.getEntityStoreRegistry().registerSystem(new StatecraftComponentUpdateSystem());
+        this.getEntityStoreRegistry().registerSystem(new StatecraftComponentAddedSystem());
 
         LOGGER.atInfo().log("Statecraft mod initialized");
         

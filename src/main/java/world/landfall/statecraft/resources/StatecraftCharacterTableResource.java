@@ -7,6 +7,7 @@ import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.protocol.PlayerSkin;
+import com.hypixel.hytale.server.core.inventory.container.CombinedItemContainer;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -22,14 +23,14 @@ import java.util.UUID;
 public class StatecraftCharacterTableResource implements Resource<ChunkStore> {
 
     public static class LocalCharacterData {
-        public ItemContainer inventory;
+        public UtilCodecs.PlayerInventory inventory;
         public EntityStatMap stats;
         public PlayerSkin playerSkin;
         public Vector3d position;
         public static final BuilderCodec<LocalCharacterData> CODEC = BuilderCodec.builder(
                 LocalCharacterData.class, LocalCharacterData::create
         )
-                .append(new KeyedCodec<ItemContainer>("Inventory", ItemContainer.CODEC),
+                .append(new KeyedCodec<UtilCodecs.PlayerInventory>("Inventory", UtilCodecs.PlayerInventory.CODEC),
                         (data, value) -> data.inventory = value,
                         data -> data.inventory).add()
                 .append(new KeyedCodec<EntityStatMap>("Stats", EntityStatMap.CODEC),
@@ -42,14 +43,14 @@ public class StatecraftCharacterTableResource implements Resource<ChunkStore> {
                         (data, value) -> data.position = value,
                         data -> data.position).add()
                 .build();
-        public LocalCharacterData(ItemContainer inventory, EntityStatMap stats, PlayerSkin playerSkin, Vector3d position) {
+        public LocalCharacterData(UtilCodecs.PlayerInventory inventory, EntityStatMap stats, PlayerSkin playerSkin, Vector3d position) {
             this.inventory = inventory;
             this.stats = stats;
             this.playerSkin = playerSkin;
             this.position = position;
         }
         public static LocalCharacterData create() {
-            return new LocalCharacterData(new SimpleItemContainer((short)0), new EntityStatMap(), new PlayerSkin(), Vector3d.ZERO);
+            return new LocalCharacterData(new UtilCodecs.PlayerInventory(), new EntityStatMap(), new PlayerSkin(), Vector3d.ZERO);
         }
     }
 

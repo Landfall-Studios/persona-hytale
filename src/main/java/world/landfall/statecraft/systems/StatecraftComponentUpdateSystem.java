@@ -39,6 +39,7 @@ public class StatecraftComponentUpdateSystem extends DelayedEntitySystem<EntityS
         }
 
     }
+    
 
     @Override
     public @Nullable Query<EntityStore> getQuery() {
