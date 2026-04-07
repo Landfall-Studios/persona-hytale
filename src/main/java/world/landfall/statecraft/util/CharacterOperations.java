@@ -50,7 +50,9 @@ public class CharacterOperations {
 //        var playerInventory = entityStore.getComponent(player, InventoryComponent.getComponentTypeById(InventoryComponent.STORAGE_SECTION_ID));
         var characterComponent = entityStore.getComponent(player, StatecraftMod.CHARACTER_COMPONENT);
         var characterTable = chunkStore.getResource(StatecraftMod.STATECRAFT_PLAYER_TABLE_RESOURCE);
-        var newCharacterData = characterTable.TABLE.getOrDefault(characterId, StatecraftCharacterTableResource.LocalCharacterData.create());
+        var newCharacterData = characterTable.TABLE.getOrDefault(characterId, new StatecraftCharacterTableResource.LocalCharacterData(
+                UtilCodecs.PlayerInventory.fromPlayer(player, entityStore), stats, new PlayerSkin(), playerPos
+        ));
         var characterList = getCharacters(player);
         if (characterComponent == null) {
             world.execute(() -> {
