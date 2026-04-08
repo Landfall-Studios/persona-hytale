@@ -1,17 +1,23 @@
 package world.landfall.statecraft.util;
 
+import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.protocol.PlayerSkin;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.model.config.Model;
+import com.hypixel.hytale.server.core.cosmetics.CosmeticsModule;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.container.CombinedItemContainer;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer;
+import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.player.PlayerSkinComponent;
+import com.hypixel.hytale.server.core.modules.entity.system.ModelSystems;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -24,6 +30,7 @@ import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
 
 public class CharacterOperations {
@@ -58,8 +65,13 @@ public class CharacterOperations {
         var characterList = getCharacters(player);
         if (characterComponent == null) {
             world.execute(() -> {
+                var savedStats = stats.clone();
+                characterTable.TABLE.put(characterId, new StatecraftCharacterTableResource.LocalCharacterData(
+                        UtilCodecs.PlayerInventory.fromPlayer(player, entityStore), savedStats, characterTable.TABLE.get(characterId).playerSkin, playerPos
+                ));
                 characterList.forEach(c -> {if (c.getCharacterId() == characterId)
                     entityStore.putComponent(player, StatecraftMod.CHARACTER_COMPONENT, new CharacterComponent(c));});
+                refreshModel(player, entityStore);
             });
             return false;
         }
@@ -85,6 +97,7 @@ public class CharacterOperations {
 
             characterList.forEach(c -> {if (c.getCharacterId() == characterId)
                 entityStore.putComponent(player, StatecraftMod.CHARACTER_COMPONENT, new CharacterComponent(c));});
+            refreshModel(player, entityStore);
         });
         return true;
     }
@@ -94,4 +107,24 @@ public class CharacterOperations {
     public static List<StatecraftCharacter> getCharacters(UUID player) {
         return StatecraftMod.api.getCharactersByPlayer(player).getOrElse(List.of());
     }
+    public static void refreshModel(Ref<EntityStore> ref, ComponentAccessor<EntityStore> store) {
+        var world = ref.getStore().getExternalData().getWorld();
+        var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+        var chunkStore = world.getChunkStore().getStore();
+        var characterComponent = store.getComponent(ref, StatecraftMod.CHARACTER_COMPONENT);
+        var table = chunkStore.getResource(StatecraftMod.STATECRAFT_PLAYER_TABLE_RESOURCE).TABLE;
+        var characterData = table.get(characterComponent.character.getCharacterId());
+        var currentData = table.get(characterComponent.character.getCharacterId());
+        var currentModel = store.getComponent(ref, PlayerSkinComponent.getComponentType());
+        var alreadyHasModel = currentData.playerSkin.bodyCharacteristic != null && !currentData.playerSkin.bodyCharacteristic.isEmpty();
+        table.put(characterComponent.character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
+                currentData.inventory, currentData.stats, alreadyHasModel ? currentData.playerSkin : currentModel.getPlayerSkin(), currentData.position
+        ));
+        var cosmetics = CosmeticsModule.get();
+        Model newModel = !alreadyHasModel ? cosmetics.createModel(currentModel.getPlayerSkin()) : cosmetics.createModel(characterData.playerSkin);
+        Util.UUID_TO_SKIN.computeIfAbsent(playerRef.getUuid(), (a) -> currentModel.getPlayerSkin().clone());
+        store.putComponent(ref, ModelComponent.getComponentType(), new ModelComponent(newModel));
+        store.putComponent(ref, PlayerSkinComponent.getComponentType(), new PlayerSkinComponent(characterData.playerSkin));
+    }
+
 }

@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementMa
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.modules.entity.player.PlayerSkinComponent;
 import com.hypixel.hytale.server.core.modules.entity.player.PlayerSystems;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -66,17 +67,13 @@ public class StatecraftComponentAddedSystem extends RefSystem<EntityStore> {
 
 //        var inventory = store.getComponent(ref, InventoryComponent.Storage.getComponentType()).getInventory();
         world.execute(() -> {
-
+            if (!ref.isValid()) return;
             if (characterComponent == null) return;
             var newStats = new EntityStatMap();
             for (int i = 0; i < stats.size(); i++) {
                 newStats.setStatValue(i, stats.get(i).get());
             }
-            table.put(characterComponent.character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
-                    UtilCodecs.PlayerInventory.fromPlayer(ref, store), newStats, new PlayerSkin(), position
-            ));
-            for (var x : table.entrySet())
-                System.out.println("DEBUG -- "+x.getKey() + " " + x.getValue().position);
+            CharacterOperations.refreshModel(ref, store);
         });
     }
 

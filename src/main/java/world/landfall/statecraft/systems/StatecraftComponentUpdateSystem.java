@@ -5,16 +5,23 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
+import com.hypixel.hytale.protocol.PlayerSkinUpdate;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.asset.type.model.config.Model;
+import com.hypixel.hytale.server.core.cosmetics.CosmeticsModule;
+import com.hypixel.hytale.server.core.modules.entity.component.ModelComponent;
+import com.hypixel.hytale.server.core.modules.entity.player.PlayerSkinComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import world.landfall.statecraft.StatecraftMod;
 import world.landfall.statecraft.config.StatecraftConfig;
+import world.landfall.statecraft.util.CharacterOperations;
 
 import java.awt.*;
 import java.util.List;
+import java.util.Random;
 
 public class StatecraftComponentUpdateSystem extends DelayedEntitySystem<EntityStore> {
     public StatecraftComponentUpdateSystem() {
@@ -27,12 +34,16 @@ public class StatecraftComponentUpdateSystem extends DelayedEntitySystem<EntityS
         if (!ref.isValid()) return;
         var player = store.getComponent(ref, PlayerRef.getComponentType());
         if (player == null) return;
+        var world = store.getExternalData().getWorld();
 
         var api = StatecraftMod.api;
         var characters = api.getCharactersByPlayer(player.getUuid()).getOrElse(List.of());
         var characterComponent = store.getComponent(ref, StatecraftMod.CHARACTER_COMPONENT);
         if (characterComponent != null) {
             // Already is logged in with a character
+            world.execute(() -> CharacterOperations.refreshModel(ref, store));
+
+
         } else {
             // Doesn't have a character (new player/character was deleted)
             player.sendMessage(Message.join(Message.raw("[STATECRAFT] ").bold(true).color(Color.CYAN), Message.raw("No character found! Run /character (or /char) to make one!")));
