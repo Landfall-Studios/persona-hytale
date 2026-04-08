@@ -1,0 +1,16 @@
+$C = "Common.ui";
+$C.@Container #Root {
+    Anchor: (Width: 1000, Height: 800);
+    #Title {
+      $C.@Title { @Text = "Character Select"; }
+    }
+    $C.@Panel #Characters {
+        LayoutMode: Top;
+        Anchor: (Top: 70, Left: 25, Width: 950, Height: 700);
+        Padding: (Full: 10);
+
+
+
+
+    }
+}

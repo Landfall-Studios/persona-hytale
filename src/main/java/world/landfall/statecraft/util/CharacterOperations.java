@@ -84,7 +84,7 @@ public class CharacterOperations {
                 UtilCodecs.PlayerInventory.fromPlayer(player, entityStore), savedStats, characterTable.TABLE.get(oldCharacter.getCharacterId()).playerSkin, playerPos
             ));
             if (oldCharacter.getCharacterId() == characterId) return;
-            playerRef.sendMessage(Message.raw("StatMap Data: "+stats.get(DefaultEntityStatTypes.getHealth())+" "+newCharacterData.stats.get(DefaultEntityStatTypes.getHealth())));
+//            playerRef.sendMessage(Message.raw("StatMap Data: "+stats.get(DefaultEntityStatTypes.getHealth())+" "+newCharacterData.stats.get(DefaultEntityStatTypes.getHealth())));
             entityStore.addComponent(player, Teleport.getComponentType(), new Teleport(newCharacterData.position, new Vector3f()));
 
             newCharacterData.inventory.applyToPlayer(player, entityStore);

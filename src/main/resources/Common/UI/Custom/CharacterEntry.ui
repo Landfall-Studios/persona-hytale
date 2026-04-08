@@ -1,0 +1,23 @@
+$C = "Common.ui";
+Group #Icon {
+    Anchor: (Width: 75, Height: 75, Left: 10);
+    Background: #FFFFFF;
+}
+Group #Text {
+    Anchor: (Width: 500, Height: 75, Left: 10);
+    LayoutMode: Top;
+    Label #NameText {
+        Text: "%s";
+
+    }
+
+    Label #IDText {
+        Text: "ID: %s";
+    }
+}
+Group #ButtonHolder {
+    Anchor: (Height: 100);
+    $C.@TextButton #Button {
+        @Text = "Equip";
+    }
+}
