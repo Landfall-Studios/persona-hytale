@@ -44,6 +44,27 @@ public interface StatecraftApi {
     ApiResult<Optional<StatecraftCharacter>> getCharacterById(long characterId);
 
     /**
+     * Gets all nations currently in the database.
+     *
+     * @return List of nations, or empty list if there are none
+     */
+    ApiResult<List<StatecraftNation>> getNations();
+
+    /**
+     * Gets all members of this nation.
+     * @param nationId The Statecraft nation ID
+     * @return List of nation members, or empty list if there are none
+     */
+    ApiResult<List<StatecraftNationMember>> getNationMembers(long nationId);
+
+    /**
+     * Gets the nation this character belongs to, if any.
+     * @param characterId The Statecraft character ID
+     * @return The nation, or empty if not found
+     */
+    ApiResult<Optional<StatecraftNation>> getNationOfCharacter(long characterId);
+
+    /**
      * Creates a new character or updates an existing one.
      *
      * @param playerUuid  The player's Minecraft UUID

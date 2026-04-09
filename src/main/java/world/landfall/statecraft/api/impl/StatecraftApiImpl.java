@@ -5,9 +5,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.hypixel.hytale.logger.HytaleLogger;
-import world.landfall.statecraft.api.ApiResult;
-import world.landfall.statecraft.api.StatecraftApi;
-import world.landfall.statecraft.api.StatecraftCharacter;
+import world.landfall.statecraft.api.*;
 import world.landfall.statecraft.config.StatecraftConfig;
 
 import java.io.IOException;
@@ -16,6 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -146,6 +145,45 @@ public class StatecraftApiImpl implements StatecraftApi {
             JsonObject json = GSON.fromJson(response, JsonObject.class);
             return Optional.of(parseCharacter(json));
         });
+    }
+
+    @Override
+    public ApiResult<List<StatecraftNation>> getNations() {
+        return executeWithRetry("GET", "/nations", null, response -> {
+            JsonObject json = GSON.fromJson(response, JsonObject.class);
+            if (!json.has("nations"))
+                return List.of();
+            var nations = json.getAsJsonArray("nations");
+            return nations.asList().stream().map(JsonElement::getAsJsonObject).map(this::parseNation).toList();
+        });
+    }
+
+    @Override
+    public ApiResult<List<StatecraftNationMember>> getNationMembers(long nationId) {
+        return executeWithRetry("GET", "/nations/%s/members".formatted(nationId), null, response -> {
+            JsonObject json = GSON.fromJson(response, JsonObject.class);
+            if (!json.has("members"))
+                return List.of();
+            var members = json.getAsJsonArray("members");
+
+            return members.asList().stream().map(JsonElement::getAsJsonObject).map(this::parseNationMember).toList();
+        });
+    }
+
+    @Override
+    public ApiResult<Optional<StatecraftNation>> getNationOfCharacter(long characterId) {
+        var nationsResult = getNations();
+        if (nationsResult.isFailure()) return ApiResult.failure(nationsResult.getErrorType().get(), nationsResult.getErrorMessage().get());
+        var nations = nationsResult.getValue().get();
+        for (var nation : nations) {
+            var memberResult = getNationMembers(nation.id);
+            if (memberResult.isFailure()) return ApiResult.notFound("Could not find members of a nation.");
+            var members = memberResult.getValue().get();
+            for (var member : members)
+                if (member.id == characterId)
+                    return ApiResult.success(Optional.of(nation));
+        }
+        return ApiResult.notFound("Character is not a member of a nation");
     }
 
     @Override
@@ -329,6 +367,43 @@ public class StatecraftApiImpl implements StatecraftApi {
         }
 
         return character;
+    }
+    private StatecraftNation parseNation(JsonObject json) {
+        try {
+            return new StatecraftNation(
+                    json.get("abbreviation").getAsString(),
+                    json.get("activeMemberCounts").getAsInt(),
+                    json.get("activityPercentage").getAsInt(),
+                    json.get("citizenCount").getAsInt(),
+                    Instant.ofEpochSecond(json.get("creationTime").getAsLong()),
+                    json.get("description").getAsString(),
+                    json.get("id").getAsLong(),
+                    json.get("isActive").getAsBoolean(),
+                    json.get("name").getAsString(),
+                    json.get("nationalCurrency").getAsString(),
+                    json.get("officerCount").getAsInt(),
+                    json.get("profilePictureUrl").getAsString(),
+                    json.get("totalMembers").getAsInt()
+            );
+        } catch (Exception e) {
+            return new StatecraftNation();
+        }
+    }
+    private StatecraftNationMember parseNationMember(JsonObject json) {
+        try {
+
+            long characterId = json.get("id").getAsLong();
+            boolean isDead = json.get("isDeceased").getAsBoolean();
+            long joinDate = json.get("joinDate").getAsLong();
+            String displayName = json.get("name").getAsString();
+            String profilePic = json.get("profilePictureUrl").getAsString();
+            String role = json.get("role").getAsString();
+            return new StatecraftNationMember(
+                    characterId, isDead, Instant.ofEpochSecond(joinDate), displayName, profilePic, role
+            );
+        } catch (Exception e) {
+            return new StatecraftNationMember();
+        }
     }
 
     @FunctionalInterface
