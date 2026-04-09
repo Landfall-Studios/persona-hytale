@@ -28,6 +28,7 @@ import world.landfall.statecraft.api.StatecraftCharacter;
 import world.landfall.statecraft.components.CharacterComponent;
 import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -54,6 +55,16 @@ public class CharacterOperations {
         var playerComponent = entityStore.getComponent(player, Player.getComponentType());
         var playerTransform = entityStore.getComponent(player, TransformComponent.getComponentType());
         var playerPos = playerTransform.getPosition().clone();
+        var characterAPIData = StatecraftMod.api.getCharacterById(characterId);
+        if (characterAPIData.isFailure()) {
+            playerRef.sendMessage(Message.raw("Could not access character in ScAPI!").color(Color.RED));
+            return false;
+        } else {
+            var temp = characterAPIData.getValue().get().get();
+            if (temp.isDeceased()) {
+                playerRef.sendMessage(Message.raw("Character is deceased!").color(Color.RED));
+            }
+        }
 
         var stats = entityStore.getComponent(player, EntityStatMap.getComponentType());
 //        var playerInventory = entityStore.getComponent(player, InventoryComponent.getComponentTypeById(InventoryComponent.STORAGE_SECTION_ID));
@@ -107,6 +118,35 @@ public class CharacterOperations {
     public static List<StatecraftCharacter> getCharacters(UUID player) {
         return StatecraftMod.api.getCharactersByPlayer(player).getOrElse(List.of());
     }
+
+    public static void markCharacterDeceased(Ref<EntityStore> player, ComponentAccessor<EntityStore> store, long characterId) {
+        var world = store.getExternalData().getWorld();
+        var table = world.getChunkStore().getStore().getResource(StatecraftMod.STATECRAFT_PLAYER_TABLE_RESOURCE).TABLE;
+        //TODO handle character doesn't exist
+        var characterData = StatecraftMod.api.getCharacterById(characterId).getValue().get().get();
+
+        var playerRef = store.getComponent(player, PlayerRef.getComponentType());
+        var result = StatecraftMod.api.getCharactersByPlayer(playerRef.getUuid());
+        if (result.isFailure())  {
+            //TODO handle API fail
+            return;
+        }
+        var characters = result.getValue().get();
+        StatecraftCharacter suitableReplacementCharacter = null;
+        for (var character : characters) {
+            if (!character.isDeceased() && character.getCharacterId() != characterId) {
+                suitableReplacementCharacter = character;
+                break;
+            }
+        }
+        if (suitableReplacementCharacter == null) {
+            //TODO handle doesn't have a replacement character
+            return;
+        }
+        StatecraftMod.api.markDeceased(characterId, characterData.getDisplayName());
+        switchCharacters(player, suitableReplacementCharacter.getCharacterId());
+    }
+
     public static void refreshModel(Ref<EntityStore> ref, ComponentAccessor<EntityStore> store) {
         var world = ref.getStore().getExternalData().getWorld();
         var playerRef = store.getComponent(ref, PlayerRef.getComponentType());

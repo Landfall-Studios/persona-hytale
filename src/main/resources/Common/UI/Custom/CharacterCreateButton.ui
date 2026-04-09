@@ -1,0 +1,11 @@
+$C = "Common.ui";
+Group #CreateButtonGroup {
+    Anchor: (Width: 700, Height: 90);
+    LayoutMode: Center;
+    Group #CreateButtonWrapper {
+        Anchor: (Width: 200, Height: 50);
+        $C.@TextButton #CreateButton {
+            @Text = "Create";
+        }
+    }
+}

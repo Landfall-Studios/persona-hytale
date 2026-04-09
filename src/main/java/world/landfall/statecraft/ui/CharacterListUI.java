@@ -20,11 +20,18 @@ import world.landfall.statecraft.util.CharacterOperations;
 
 public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Data> {
     public static class Data {
+        enum ButtonAction {
+            EQUIP, MARK_DECEASED, CREATE
+        }
         private String character;
+        private ButtonAction action;
         public static final BuilderCodec<Data> CODEC = BuilderCodec.<Data>builder(Data.class, Data::new)
                 .append(new KeyedCodec<String>("Character", BuilderCodec.STRING),
                         (data, value) -> data.character = value,
                         data -> data.character).add()
+                .append(new KeyedCodec<String>("Action", BuilderCodec.STRING),
+                        (data, value) -> data.action = ButtonAction.valueOf(value),
+                        data -> data.action.name()).add()
                 .build();
     }
     public CharacterListUI(@NonNull PlayerRef playerRef) {
@@ -41,7 +48,7 @@ public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Dat
                    
                     Group #Border%s {
                         Background: #FFFFFF;
-                        Anchor: (Width: 750, Height: 100, Bottom: 10, Top: 20);
+                        Anchor: (Width: 750, Height: 125, Bottom: 10, Top: 20);
                         Padding: (Full: 1);
                         Group #Character%s {
                             LayoutMode: Left;
@@ -49,15 +56,33 @@ public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Dat
                             Background: #1a2634;
                         }
                     }""".formatted(c.getCharacterId(), c.getCharacterId()));
-            uiCommandBuilder.append("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId(), "CharacterEntry.ui");
+            if (c.isDeceased())
+                uiCommandBuilder.append("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId(), "CharacterEntryDeceased.ui");
+            else
+                uiCommandBuilder.append("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId(), "CharacterEntry.ui");
             uiCommandBuilder.set("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #Text #NameText.Text", c.getDisplayName());
             uiCommandBuilder.set("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #Text #IDText.Text", "ID: "+c.getCharacterId());
-            evt.addEventBinding(
-                    CustomUIEventBindingType.Activating,
-                    "#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #ButtonHolder #Button",
-                    new EventData().append("Character", c.getCharacterId()+"")
-            );
+            if (c.isDeceased()) {
+
+            } else {
+                evt.addEventBinding(
+                        CustomUIEventBindingType.Activating,
+                        "#Root #Characters #Border" + c.getCharacterId() + " #Character" + c.getCharacterId() + " #ButtonHolder #Button",
+                        new EventData().append("Character", c.getCharacterId() + "").append("Action", "EQUIP")
+                );
+                evt.addEventBinding(
+                        CustomUIEventBindingType.Activating,
+                        "#Root #Characters #Border" + c.getCharacterId() + " #Character" + c.getCharacterId() + " #ButtonHolder #KillButton",
+                        new EventData().append("Character", c.getCharacterId() + "").append("Action", "MARK_DECEASED")
+                );
+            }
         });
+        uiCommandBuilder.append("#Root #Characters", "CharacterCreateButton.ui");
+        evt.addEventBinding(
+                CustomUIEventBindingType.Activating,
+                "#Root #Characters #CreateButtonGroup #CreateButtonWrapper #CreateButton",
+                new EventData().append("Character", "-1").append("Action", "CREATE")
+        );
     }
 
     @Override
@@ -70,10 +95,22 @@ public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Dat
 
         try {
             var characterId = Long.parseLong(data.character);
-            world.execute(() -> {
-                CharacterOperations.switchCharacters(ref, characterId);
-            });
-            player.getPageManager().setPage(ref, store, Page.None);
+            var action = data.action;
+            switch (action) {
+                case EQUIP -> world.execute(() -> {
+                    CharacterOperations.switchCharacters(ref, characterId);
+                    player.getPageManager().setPage(ref, store, Page.None);
+                });
+                case MARK_DECEASED -> world.execute(() -> {
+                    //TODO handle this button
+                    CharacterOperations.markCharacterDeceased(ref, store, characterId);
+                    player.getPageManager().setPage(ref, store, Page.None);
+                });
+                case CREATE -> world.execute(() -> {
+                    //TODO make a page for this
+                    player.getPageManager().setPage(ref, store, Page.None);
+                });
+            }
         } catch (NumberFormatException e) {
             return;
         }

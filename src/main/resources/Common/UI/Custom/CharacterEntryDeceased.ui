@@ -18,13 +18,4 @@ Group #Text {
 Group #ButtonHolder {
     Anchor: (Height: 100);
     LayoutMode: Top;
-    $C.@CancelTextButton #KillButton {
-        @Text = "Mark Deceased";
-    }
-    Group {
-        Anchor: (Height: 12);
-    }
-    $C.@TextButton #Button {
-        @Text = "Equip";
-    }
 }
