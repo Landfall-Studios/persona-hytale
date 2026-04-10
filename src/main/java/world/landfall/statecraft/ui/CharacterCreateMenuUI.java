@@ -18,16 +18,28 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.jspecify.annotations.NonNull;
 import world.landfall.statecraft.StatecraftMod;
 import world.landfall.statecraft.components.CharacterComponent;
+import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 import world.landfall.statecraft.util.CharacterOperations;
 
 public class CharacterCreateMenuUI extends InteractiveCustomUIPage<CharacterCreateMenuUI.Data> {
+    private StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon currentIcon = StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.ANGEL;
     public static class Data {
+
+
+        public enum ButtonAction {
+            CREATE, SWAP_ICON
+        }
+
         public String name;
+        public ButtonAction buttonAction;
 
         public static final BuilderCodec<Data> CODEC = BuilderCodec.builder(Data.class, Data::new)
                 .append(new KeyedCodec<>("@Name", BuilderCodec.STRING),
                         (data, value) -> data.name = value,
                         data -> data.name).add()
+                .append(new KeyedCodec<>("ButtonAction", BuilderCodec.STRING),
+                        (data, value) -> data.buttonAction = ButtonAction.valueOf(value),
+                        data -> data.buttonAction.name()).add()
                 .build();
 
         public Data() {
@@ -41,7 +53,20 @@ public class CharacterCreateMenuUI extends InteractiveCustomUIPage<CharacterCrea
     @Override
     public void build(@NonNull Ref<EntityStore> ref, @NonNull UICommandBuilder builder, @NonNull UIEventBuilder evt, @NonNull Store<EntityStore> store) {
         builder.append("CharacterCreateMenu.ui");
-        evt.addEventBinding(CustomUIEventBindingType.Activating, "#Root #Panel #Right #Bottom #ButtonWrapper #Button", EventData.of("@Name", "#Root #Panel #Right #Top #Input.Value"));
+        evt.addEventBinding(
+                CustomUIEventBindingType.Activating, "#Root #Panel #Right #Bottom #ButtonWrapper #Button",
+                new EventData()
+                        .append("@Name", "#Root #Panel #Right #Top #Input.Value")
+                        .append("ButtonAction", "CREATE")
+        );
+        evt.addEventBinding(
+                CustomUIEventBindingType.Activating, "#Root #Panel #Left #SwapIconButtonWrapper #SwapIconButton",
+                new EventData()
+                        .append("@Name", "#Root #Panel #Right #Top #Input.Value")
+                        .append("ButtonAction", "SWAP_ICON")
+        );
+        refreshIcon();
+
     }
 
     @Override
@@ -51,8 +76,25 @@ public class CharacterCreateMenuUI extends InteractiveCustomUIPage<CharacterCrea
         if (player == null) return;
 
         var name = data.name;
-        world.execute(() -> CharacterOperations.createCharacter(ref, name));
-        player.getPageManager().setPage(ref, store, Page.None);
+        var action = data.buttonAction;
+        switch (action) {
+            case CREATE -> {
+                world.execute(() -> CharacterOperations.createCharacter(ref, name, this.currentIcon));
+                player.getPageManager().setPage(ref, store, Page.None);
+            }
+            case SWAP_ICON -> {
+                var ordinal = this.currentIcon.ordinal();
+                this.currentIcon = StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.values()[(ordinal+1)% StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.values().length];
+                refreshIcon();
+            }
+        }
+
 
     }
+    private void refreshIcon() {
+        var command = new UICommandBuilder();
+        command.set("#Root #Panel #Left #Icon.Background", "#"+(this.currentIcon.ordinal()+"").repeat(6));
+        sendUpdate(command);
+    }
+
 }

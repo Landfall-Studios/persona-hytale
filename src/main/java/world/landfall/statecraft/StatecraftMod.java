@@ -3,7 +3,10 @@ package world.landfall.statecraft;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.ResourceType;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChain;
 import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.io.adapter.PacketAdapters;
+import com.hypixel.hytale.server.core.io.adapter.PacketFilter;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
@@ -18,6 +21,7 @@ import world.landfall.statecraft.commands.StatecraftCommand;
 import world.landfall.statecraft.components.CharacterComponent;
 import world.landfall.statecraft.components.StatecraftComponent;
 import world.landfall.statecraft.config.StatecraftConfig;
+import world.landfall.statecraft.packet.ModPlayerInputHandler;
 import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 import world.landfall.statecraft.systems.ModPlayerJoinSystem;
 import world.landfall.statecraft.systems.StatecraftComponentAddedSystem;
@@ -33,6 +37,7 @@ public class StatecraftMod extends JavaPlugin {
     public static StatecraftApi api;
     public static ApiConnectionManager connectionManager;
 
+    public static PacketFilter input;
 
     public static ComponentType<EntityStore, CharacterComponent> CHARACTER_COMPONENT;
     public static ComponentType<EntityStore, StatecraftComponent> STATECRAFT_COMPONENT;
@@ -50,8 +55,18 @@ public class StatecraftMod extends JavaPlugin {
     }
 
     @Override
+    protected void shutdown() {
+        config.save();
+        super.shutdown();
+
+    }
+
+    @Override
     protected void setup() {
         instance = this;
+
+        config.load();
+
 //        this.getCommandRegistry().registerCommand(new ExampleCommand(this.getName(), this.getManifest().getVersion().toString()));
 
         this.getCommandRegistry().registerCommand(new StatecraftCommand());
@@ -67,7 +82,14 @@ public class StatecraftMod extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(new StatecraftComponentUpdateSystem());
         this.getEntityStoreRegistry().registerSystem(new StatecraftComponentAddedSystem());
 
+        var inputHandler = new ModPlayerInputHandler();
+        input = PacketAdapters.registerInbound(inputHandler);
+        input = PacketAdapters.registerOutbound(inputHandler);
+
+
         LOGGER.atInfo().log("Statecraft mod initialized");
+
+
         
     }
 }

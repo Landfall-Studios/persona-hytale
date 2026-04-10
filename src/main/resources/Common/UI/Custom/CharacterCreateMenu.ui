@@ -8,10 +8,16 @@ $C.@Container #Root {
         LayoutMode: Center;
         Group #Left {
             Anchor: (Width: 100, Height: 200);
-            LayoutMode: Center;
+            LayoutMode: Middle;
             Group #Icon {
                 Anchor: (Width: 100, Height: 100);
                 Background: #FFFFFF;
+            }
+            Group #SwapIconButtonWrapper {
+                Anchor: (Width: 50, Height: 50);
+                $C.@Button #SwapIconButton {
+
+                }
             }
         }
         Group #Right {

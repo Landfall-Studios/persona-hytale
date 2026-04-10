@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CharacterOperations {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
-    public static StatecraftCharacter createCharacter(Ref<EntityStore> player, String name) {
+    public static StatecraftCharacter createCharacter(Ref<EntityStore> player, String name, StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon icon) {
 
         var playerRef = player.getStore().getComponent(player, PlayerRef.getComponentType());
         var world = player.getStore().getExternalData().getWorld();
@@ -58,7 +58,7 @@ public class CharacterOperations {
         if (result.isSuccess()) {
             var character = result.getOrThrow();
             table.put(character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
-                    new UtilCodecs.PlayerInventory(), new EntityStatMap(), skin.getPlayerSkin(), playerRef.getTransform().getPosition(), StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.ANGEL
+                    new UtilCodecs.PlayerInventory(), new EntityStatMap(), skin.getPlayerSkin(), playerRef.getTransform().getPosition(), icon
             ));
             switchCharacters(player, character.getCharacterId());
         } else {

@@ -15,6 +15,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.jspecify.annotations.NonNull;
 import world.landfall.statecraft.StatecraftMod;
+import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 import world.landfall.statecraft.util.CharacterOperations;
 
 import java.awt.*;
@@ -83,7 +84,7 @@ public class StatecraftCommand extends AbstractPlayerCommand {
                     return;
                 }
                 var name = sanitize(commandContext.get(characterArg));
-                var result = CharacterOperations.createCharacter(player, name);
+                var result = CharacterOperations.createCharacter(player, name, StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.ANGEL);
                 if (result != null) {
                     commandContext.sendMessage(Message.raw("Successfully created a character!"));
                 } else
