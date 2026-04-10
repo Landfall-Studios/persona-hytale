@@ -18,6 +18,7 @@ import org.jspecify.annotations.Nullable;
 import world.landfall.statecraft.StatecraftMod;
 import world.landfall.statecraft.config.StatecraftConfig;
 import world.landfall.statecraft.util.CharacterOperations;
+import world.landfall.statecraft.util.Util;
 
 import java.awt.*;
 import java.util.List;
@@ -38,8 +39,14 @@ public class StatecraftComponentUpdateSystem extends DelayedEntitySystem<EntityS
 
         var api = StatecraftMod.api;
         var characters = api.getCharactersByPlayer(player.getUuid()).getOrElse(List.of());
+        var table = Util.getCharacterTable();
         var characterComponent = store.getComponent(ref, StatecraftMod.CHARACTER_COMPONENT);
         if (characterComponent != null) {
+            // Are we in a glitched state? Get that component outa here, it'll break shit
+            if (!table.containsKey(characterComponent.character.getCharacterId())) {
+                world.execute(() -> store.removeComponent(ref, StatecraftMod.CHARACTER_COMPONENT));
+                return;
+            }
             // Already is logged in with a character
             world.execute(() -> CharacterOperations.refreshModel(ref, store));
 

@@ -16,12 +16,14 @@ import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.jspecify.annotations.NonNull;
+import world.landfall.statecraft.StatecraftMod;
 import world.landfall.statecraft.util.CharacterOperations;
+import world.landfall.statecraft.util.Util;
 
 public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Data> {
     public static class Data {
         enum ButtonAction {
-            EQUIP, MARK_DECEASED, CREATE
+            EQUIP, MARK_DECEASED, CREATE, COLLECT, UPLOAD_SKIN
         }
         private String character;
         private ButtonAction action;
@@ -43,6 +45,10 @@ public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Dat
         uiCommandBuilder.append("CharacterList.ui");
         var characterList = CharacterOperations.getCharacters(ref);
         characterList.forEach(c -> {
+            if (c.isDeceased()) {
+                var table = Util.getCharacterTable();
+                if (!table.containsKey(c.getCharacterId())) return;
+            }
             uiCommandBuilder.appendInline("#Root #Characters", """
                     $C = "Common.ui";
                    
@@ -56,15 +62,15 @@ public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Dat
                             Background: #1a2634;
                         }
                     }""".formatted(c.getCharacterId(), c.getCharacterId()));
-            if (c.isDeceased())
-                uiCommandBuilder.append("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId(), "CharacterEntryDeceased.ui");
-            else
-                uiCommandBuilder.append("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId(), "CharacterEntry.ui");
-            uiCommandBuilder.set("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #Text #NameText.Text", c.getDisplayName());
-            uiCommandBuilder.set("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #Text #IDText.Text", "ID: "+c.getCharacterId());
             if (c.isDeceased()) {
-
+                uiCommandBuilder.append("#Root #Characters #Border" + c.getCharacterId() + " #Character" + c.getCharacterId(), "CharacterEntryDeceased.ui");
+                evt.addEventBinding(
+                        CustomUIEventBindingType.Activating,
+                        "#Root #Characters #Border" + c.getCharacterId() + " #Character" + c.getCharacterId() + " #ButtonHolder #Button",
+                        new EventData().append("Character", c.getCharacterId() + "").append("Action", "COLLECT")
+                );
             } else {
+                uiCommandBuilder.append("#Root #Characters #Border" + c.getCharacterId() + " #Character" + c.getCharacterId(), "CharacterEntry.ui");
                 evt.addEventBinding(
                         CustomUIEventBindingType.Activating,
                         "#Root #Characters #Border" + c.getCharacterId() + " #Character" + c.getCharacterId() + " #ButtonHolder #Button",
@@ -75,7 +81,15 @@ public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Dat
                         "#Root #Characters #Border" + c.getCharacterId() + " #Character" + c.getCharacterId() + " #ButtonHolder #KillButton",
                         new EventData().append("Character", c.getCharacterId() + "").append("Action", "MARK_DECEASED")
                 );
+                evt.addEventBinding(
+                        CustomUIEventBindingType.Activating,
+                        "#Root #Characters #Border" + c.getCharacterId() + " #Character" + c.getCharacterId() + " #UploadButtonWrapper #UploadButton",
+                        new EventData().append("Character", c.getCharacterId() + "").append("Action", "UPLOAD_SKIN")
+                );
             }
+            uiCommandBuilder.set("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #Text #NameText.Text", c.getDisplayName());
+            uiCommandBuilder.set("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #Text #IDText.Text", "ID: "+c.getCharacterId());
+
         });
         uiCommandBuilder.append("#Root #Characters", "CharacterCreateButton.ui");
         evt.addEventBinding(
@@ -106,9 +120,22 @@ public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Dat
                     CharacterOperations.markCharacterDeceased(ref, store, characterId);
                     player.getPageManager().setPage(ref, store, Page.None);
                 });
-                case CREATE -> world.execute(() -> {
-                    //TODO make a page for this
+                case CREATE -> world.execute(() -> player.getPageManager().openCustomPage(ref, store, new CharacterCreateMenuUI(playerRef)));
+                case COLLECT -> world.execute(() -> {
+                    var table = Util.getCharacterTable();
+                    var character = table.get(characterId);
+                    character.inventory.STORAGE.forEach((i, stack) -> player.giveItem(stack, ref, store));
+                    character.inventory.UTILITY.forEach((i, stack) -> player.giveItem(stack, ref, store));
+                    character.inventory.HOTBAR.forEach((i, stack) -> player.giveItem(stack, ref, store));
+                    character.inventory.BACKPACK.forEach((i, stack) -> player.giveItem(stack, ref, store));
+                    character.inventory.ARMOR.forEach((i, stack) -> player.giveItem(stack, ref, store));
+                    table.remove(characterId);
                     player.getPageManager().setPage(ref, store, Page.None);
+                });
+                case UPLOAD_SKIN -> world.execute(() -> {
+                    CharacterOperations.setModel(ref, store, characterId);
+                    player.getPageManager().setPage(ref, store, Page.None);
+
                 });
             }
         } catch (NumberFormatException e) {

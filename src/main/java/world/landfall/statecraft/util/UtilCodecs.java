@@ -14,7 +14,6 @@ public class UtilCodecs {
     public static class PlayerInventory {
         public ItemContainer ARMOR;
         public ItemContainer BACKPACK;
-        public ItemContainer TOOL;
         public ItemContainer HOTBAR;
         public ItemContainer UTILITY;
         public ItemContainer STORAGE;
@@ -26,9 +25,6 @@ public class UtilCodecs {
                 .append(new KeyedCodec<ItemContainer>("Backpack", ItemContainer.CODEC),
                         (data, value) -> data.BACKPACK = value,
                         data -> data.BACKPACK).add()
-                .append(new KeyedCodec<ItemContainer>("Tool", ItemContainer.CODEC),
-                        (data, value) -> data.TOOL = value,
-                        data -> data.TOOL).add()
                 .append(new KeyedCodec<ItemContainer>("Hotbar", ItemContainer.CODEC),
                         (data, value) -> data.HOTBAR = value,
                         data -> data.HOTBAR).add()
@@ -43,15 +39,13 @@ public class UtilCodecs {
         public PlayerInventory() {
             ARMOR = new SimpleItemContainer((short)1);
             BACKPACK = new SimpleItemContainer((short)1);
-            TOOL = new SimpleItemContainer((short)1);
             HOTBAR = new SimpleItemContainer((short)1);
             UTILITY = new SimpleItemContainer((short)1);
             STORAGE = new SimpleItemContainer((short)1);
         }
-        public PlayerInventory(ItemContainer ARMOR, ItemContainer BACKPACK, ItemContainer TOOL, ItemContainer HOTBAR, ItemContainer UTILITY, ItemContainer STORAGE) {
+        public PlayerInventory(ItemContainer ARMOR, ItemContainer BACKPACK, ItemContainer HOTBAR, ItemContainer UTILITY, ItemContainer STORAGE) {
             this.ARMOR = ARMOR;
             this.BACKPACK = BACKPACK;
-            this.TOOL = TOOL;
             this.HOTBAR = HOTBAR;
             this.UTILITY = UTILITY;
             this.STORAGE = STORAGE;
@@ -61,7 +55,6 @@ public class UtilCodecs {
             return new PlayerInventory(
                     store.getComponent(ref, InventoryComponent.Armor.getComponentType()).getInventory().clone(),
                     store.getComponent(ref, InventoryComponent.Backpack.getComponentType()).getInventory().clone(),
-                    store.getComponent(ref, InventoryComponent.Tool.getComponentType()).getInventory().clone(),
                     store.getComponent(ref, InventoryComponent.Hotbar.getComponentType()).getInventory().clone(),
                     store.getComponent(ref, InventoryComponent.Utility.getComponentType()).getInventory().clone(),
                     store.getComponent(ref, InventoryComponent.Storage.getComponentType()).getInventory().clone()
@@ -70,7 +63,6 @@ public class UtilCodecs {
         public void applyToPlayer(Ref<EntityStore> ref, ComponentAccessor<EntityStore> store) {
             applyInventory(ARMOR, store.getComponent(ref, InventoryComponent.Armor.getComponentType()).getInventory());
             applyInventory(BACKPACK, store.getComponent(ref, InventoryComponent.Backpack.getComponentType()).getInventory());
-            applyInventory(TOOL, store.getComponent(ref, InventoryComponent.Tool.getComponentType()).getInventory());
             applyInventory(HOTBAR, store.getComponent(ref, InventoryComponent.Hotbar.getComponentType()).getInventory());
             applyInventory(UTILITY, store.getComponent(ref, InventoryComponent.Utility.getComponentType()).getInventory());
             applyInventory(STORAGE, store.getComponent(ref, InventoryComponent.Storage.getComponentType()).getInventory());

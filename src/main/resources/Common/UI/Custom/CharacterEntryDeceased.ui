@@ -1,10 +1,10 @@
 $C = "Common.ui";
 Group #Icon {
     Anchor: (Width: 100, Height: 100, Left: 10);
-    Background: #FFFFFF;
+    Background: #333333;
 }
 Group #Text {
-    Anchor: (Width: 400, Height: 100, Left: 10);
+    Anchor: (Width: 350, Height: 100, Left: 10);
     LayoutMode: Top;
     Label #NameText {
         Text: "%s";
@@ -18,4 +18,7 @@ Group #Text {
 Group #ButtonHolder {
     Anchor: (Height: 100);
     LayoutMode: Top;
+    $C.@TextButton #Button {
+        @Text = "Collect Inventory";
+    }
 }

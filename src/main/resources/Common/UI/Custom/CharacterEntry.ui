@@ -4,7 +4,7 @@ Group #Icon {
     Background: #FFFFFF;
 }
 Group #Text {
-    Anchor: (Width: 400, Height: 100, Left: 10);
+    Anchor: (Width: 200, Height: 100, Left: 10);
     LayoutMode: Top;
     Label #NameText {
         Text: "%s";
@@ -13,6 +13,12 @@ Group #Text {
 
     Label #IDText {
         Text: "ID: %s";
+    }
+}
+Group #UploadButtonWrapper {
+    Anchor: (Right: 10);
+    $C.@SecondaryTextButton #UploadButton {
+        @Text = "Upload Skin";
     }
 }
 Group #ButtonHolder {

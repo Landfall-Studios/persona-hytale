@@ -7,6 +7,6 @@ import org.jspecify.annotations.Nullable;
 public class StatecraftComponent implements Component<EntityStore> {
     @Override
     public @Nullable Component<EntityStore> clone() {
-        return null;
+        return new StatecraftComponent();
     }
 }

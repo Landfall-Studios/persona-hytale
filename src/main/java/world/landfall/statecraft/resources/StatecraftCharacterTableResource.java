@@ -23,10 +23,16 @@ import java.util.UUID;
 public class StatecraftCharacterTableResource implements Resource<ChunkStore> {
 
     public static class LocalCharacterData {
+
+        public enum CharacterIcon {
+            SKULL, ANGEL, SWORD, HEART, POTION, CAT, FOX, ORC, ELF
+        }
+
         public UtilCodecs.PlayerInventory inventory;
         public EntityStatMap stats;
         public PlayerSkin playerSkin;
         public Vector3d position;
+        public CharacterIcon icon;
         public static final BuilderCodec<LocalCharacterData> CODEC = BuilderCodec.builder(
                 LocalCharacterData.class, LocalCharacterData::create
         )
@@ -42,15 +48,19 @@ public class StatecraftCharacterTableResource implements Resource<ChunkStore> {
                 .append(new KeyedCodec<Vector3d>("Transform", Vector3d.CODEC),
                         (data, value) -> data.position = value,
                         data -> data.position).add()
+                .append(new KeyedCodec<String>("Icon", BuilderCodec.STRING),
+                        (data, value) -> data.icon = CharacterIcon.valueOf(value),
+                        data -> data.icon.name()).add()
                 .build();
-        public LocalCharacterData(UtilCodecs.PlayerInventory inventory, EntityStatMap stats, PlayerSkin playerSkin, Vector3d position) {
+        public LocalCharacterData(UtilCodecs.PlayerInventory inventory, EntityStatMap stats, PlayerSkin playerSkin, Vector3d position, CharacterIcon icon) {
             this.inventory = inventory;
             this.stats = stats;
             this.playerSkin = playerSkin;
             this.position = position;
+            this.icon = icon;
         }
         public static LocalCharacterData create() {
-            return new LocalCharacterData(new UtilCodecs.PlayerInventory(), new EntityStatMap(), new PlayerSkin(), Vector3d.ZERO);
+            return new LocalCharacterData(new UtilCodecs.PlayerInventory(), new EntityStatMap(), new PlayerSkin(), Vector3d.ZERO, CharacterIcon.ANGEL);
         }
     }
 

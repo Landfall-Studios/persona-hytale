@@ -56,7 +56,7 @@ public class CharacterCommand extends AbstractPlayerCommand {
                 store.putComponent(ref, ModelComponent.getComponentType(), new ModelComponent(CosmeticsModule.get().createModel(newModel)));
                 store.putComponent(ref, PlayerSkinComponent.getComponentType(), new PlayerSkinComponent(newModel));
                 table.put(character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
-                        characterData.inventory, characterData.stats, newModel, characterData.position
+                        characterData.inventory, characterData.stats, newModel, characterData.position, characterData.icon
                 ));
 
 

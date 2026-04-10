@@ -1,0 +1,43 @@
+$C = "Common.ui";
+$C.@Container #Root {
+    Anchor: (Width: 600, Height: 300);
+    #Title {
+      $C.@Title { @Text = "New Character"; }
+    }
+    Group #Panel {
+        LayoutMode: Center;
+        Group #Left {
+            Anchor: (Width: 100, Height: 200);
+            LayoutMode: Center;
+            Group #Icon {
+                Anchor: (Width: 100, Height: 100);
+                Background: #FFFFFF;
+            }
+        }
+        Group #Right {
+            LayoutMode: Middle;
+            Anchor: (Left: 20);
+            Group #Top {
+                Anchor: (Width: 400, Height: 150, Bottom: 20);
+                LayoutMode: Middle;
+                Label #Label {
+                    Text: "Name of your Character";
+                }
+                $C.@TextField #Input {
+                    @Anchor = (Width: 400, Top: 10);
+                    PlaceholderText: "John Pork";
+                }
+            }
+            Group #Bottom {
+                Anchor: (Width: 400);
+                Group #ButtonWrapper {
+                    LayoutMode: Top;
+                    Anchor: (Width: 200);
+                    $C.@TextButton #Button {
+                        @Text = "Create";
+                    }
+                }
+            }
+        }
+    }
+}
