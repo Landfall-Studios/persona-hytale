@@ -6,6 +6,7 @@ import com.hypixel.hytale.protocol.MovementStatesUpdate;
 import com.hypixel.hytale.protocol.Packet;
 import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChain;
 import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChains;
+import com.hypixel.hytale.protocol.packets.player.ClientMovement;
 import com.hypixel.hytale.server.core.auth.PlayerAuthentication;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.io.PacketHandler;
@@ -21,15 +22,14 @@ public class ModPlayerInputHandler implements PlayerPacketWatcher {
 
     @Override
     public void accept(PlayerRef playerRef, Packet packet) {
-        if (!(packet instanceof MovementStatesUpdate movementStatesPacket)) return;
-        System.out.println("Got here");
+        if (!(packet instanceof ClientMovement clientMovement) || clientMovement.movementStates == null) return;
         var ref = playerRef.getReference();
         var store = ref.getStore();
         var world = store.getExternalData().getWorld();
         world.execute(() -> {
             var player = store.getComponent(ref, Player.getComponentType());
 
-                if (player.getPageManager().getCustomPage() == null && movementStatesPacket.movementStates.walking)
+                if (player.getPageManager().getCustomPage() == null && clientMovement.movementStates.walking)
                     player.getPageManager().openCustomPage(ref, store, new CharacterListUI(playerRef));
         });
 

@@ -41,9 +41,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CharacterOperations {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public static StatecraftCharacter createCharacter(Ref<EntityStore> player, String name, StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon icon) {
-
         var playerRef = player.getStore().getComponent(player, PlayerRef.getComponentType());
         var world = player.getStore().getExternalData().getWorld();
+        if (playerRef == null || !player.isValid()) return null;
+        LOGGER.atInfo().log("Player %s is creating a new character with name \"%s\"", playerRef.getUsername(), name);
         if (!world.getName().equals(World.DEFAULT)) {
             playerRef.sendMessage(Message.raw("Can't perform character actions outside of Orbis!").color(Color.RED));
             return null;
@@ -81,11 +82,12 @@ public class CharacterOperations {
         }
         return result.getValue().get();
     }
-    public static boolean switchCharacters(Ref<EntityStore> player, long characterId) {
+    public static boolean switchCharactersNoTeleport(Ref<EntityStore> player, long characterId) {
         var entityStore = player.getStore();
         var world = entityStore.getExternalData().getWorld();
         var chunkStore = world.getChunkStore().getStore();
         var playerRef = entityStore.getComponent(player, PlayerRef.getComponentType());
+        if (playerRef == null || !player.isValid()) return false;
         var playerComponent = entityStore.getComponent(player, Player.getComponentType());
         if (!world.getName().equals(World.DEFAULT)) {
             playerRef.sendMessage(Message.raw("Can't perform character actions outside of Orbis!").color(Color.RED));
@@ -93,6 +95,11 @@ public class CharacterOperations {
         };
         var playerTransform = entityStore.getComponent(player, TransformComponent.getComponentType());
         var playerPos = playerTransform.getPosition().clone();
+        var characterComponent = entityStore.getComponent(player, StatecraftMod.CHARACTER_COMPONENT);
+        if (characterComponent.character.getCharacterId() == characterId) {
+            playerRef.sendMessage(Message.raw("You are already using that character!"));
+            return false;
+        }
         var characterAPIData = StatecraftMod.api.getCharacterById(characterId);
         if (characterAPIData.isFailure()) {
             playerRef.sendMessage(Message.raw("Could not access character in ScAPI!").color(Color.RED));
@@ -110,7 +117,6 @@ public class CharacterOperations {
 
         var stats = entityStore.getComponent(player, EntityStatMap.getComponentType());
 //        var playerInventory = entityStore.getComponent(player, InventoryComponent.getComponentTypeById(InventoryComponent.STORAGE_SECTION_ID));
-        var characterComponent = entityStore.getComponent(player, StatecraftMod.CHARACTER_COMPONENT);
         var characterTable = Util.getCharacterTable();
         var newCharacterData = characterTable.getOrDefault(characterId, new StatecraftCharacterTableResource.LocalCharacterData(
                 UtilCodecs.PlayerInventory.fromPlayer(player, entityStore), stats, new PlayerSkin(), playerPos, StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.ANGEL
@@ -134,11 +140,12 @@ public class CharacterOperations {
         world.execute(() -> {
             var savedStats = stats.clone();
             characterTable.put(oldCharacter.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
-                UtilCodecs.PlayerInventory.fromPlayer(player, entityStore), savedStats, characterTable.get(oldCharacter.getCharacterId()).playerSkin, playerPos, characterTable.get(oldCharacter.getCharacterId()).icon
+                    UtilCodecs.PlayerInventory.fromPlayer(player, entityStore), savedStats, characterTable.get(oldCharacter.getCharacterId()).playerSkin, playerPos, characterTable.get(oldCharacter.getCharacterId()).icon
             ));
             if (oldCharacter.getCharacterId() == characterId) return;
 //            playerRef.sendMessage(Message.raw("StatMap Data: "+stats.get(DefaultEntityStatTypes.getHealth())+" "+newCharacterData.stats.get(DefaultEntityStatTypes.getHealth())));
-            entityStore.addComponent(player, Teleport.getComponentType(), new Teleport(newCharacterData.position, new Vector3f()));
+
+
 
             newCharacterData.inventory.applyToPlayer(player, entityStore);
             var newStats = newCharacterData.stats;
@@ -152,6 +159,16 @@ public class CharacterOperations {
                 entityStore.putComponent(player, StatecraftMod.CHARACTER_COMPONENT, new CharacterComponent(c));});
             refreshModel(player, entityStore);
         });
+        return true;
+    }
+    public static boolean switchCharacters(Ref<EntityStore> player, long characterId) {
+        var result = switchCharactersNoTeleport(player, characterId);
+        if (!result) return false;
+        var entityStore = player.getStore();
+        var table = Util.getCharacterTable();
+        var newCharacterData = table.get(characterId);
+
+        entityStore.putComponent(player, Teleport.getComponentType(), Teleport.createForPlayer(newCharacterData.position, new Vector3f()));
         return true;
     }
     public static List<StatecraftCharacter> getCharacters(Ref<EntityStore> player) {
@@ -202,7 +219,7 @@ public class CharacterOperations {
         var world = ref.getStore().getExternalData().getWorld();
         var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
         if (playerRef == null || playerRef.isValid()) return;
-        LOGGER.atFine().log("Uploading model for player %s and character %d", playerRef.getUsername(), characterId);
+        LOGGER.atInfo().log("Uploading model for player %s and character %d", playerRef.getUsername(), characterId);
         if (!world.getName().equals(World.DEFAULT)) {
             LOGGER.atWarning().log("Player %s tried to set a character model while not in DEFAULT.", playerRef.getUsername());
             playerRef.sendMessage(Message.raw("Can't perform character actions outside of Orbis!").color(Color.RED));
@@ -229,7 +246,7 @@ public class CharacterOperations {
         var world = ref.getStore().getExternalData().getWorld();
         var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
         if (playerRef == null || !playerRef.isValid()) return;
-        LOGGER.atFine().log("Refreshing model for player %s", playerRef.getUsername());
+        LOGGER.atInfo().log("Refreshing model for player %s", playerRef.getUsername());
         var chunkStore = world.getChunkStore().getStore();
         var characterComponent = store.getComponent(ref, StatecraftMod.CHARACTER_COMPONENT);
         var table = Util.getCharacterTable();
@@ -247,7 +264,7 @@ public class CharacterOperations {
         var currentModel = store.getComponent(ref, PlayerSkinComponent.getComponentType());
         var alreadyHasModel = currentData.playerSkin.bodyCharacteristic != null && !currentData.playerSkin.bodyCharacteristic.isEmpty();
         if (alreadyHasModel)
-            LOGGER.atFine().log("Character already has a model");
+            LOGGER.atInfo().log("Character already has a model");
         else
             table.put(characterComponent.character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
                 currentData.inventory, currentData.stats, oldSkin, currentData.position, currentData.icon

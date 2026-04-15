@@ -2,6 +2,7 @@ package world.landfall.statecraft.systems;
 
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.component.system.RefChangeSystem;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.PlayerSkin;
@@ -29,20 +30,31 @@ import world.landfall.statecraft.util.UtilCodecs;
 
 import java.time.Instant;
 
-public class StatecraftComponentAddedSystem extends RefSystem<EntityStore> {
+public class StatecraftComponentAddedSystem extends RefChangeSystem<EntityStore, StatecraftComponent> {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     @Override
-    public void onEntityAdded(@NonNull Ref<EntityStore> ref, @NonNull AddReason addReason, @NonNull Store<EntityStore> store, @NonNull CommandBuffer<EntityStore> commandBuffer) {
+    public @Nullable Query<EntityStore> getQuery() {
+        return Query.and(StatecraftMod.STATECRAFT_COMPONENT);
+    }
+
+    @Override
+    public @NonNull ComponentType<EntityStore, StatecraftComponent> componentType() {
+        return StatecraftMod.STATECRAFT_COMPONENT;
+    }
+
+    @Override
+    public void onComponentAdded(@NonNull Ref<EntityStore> ref, @NonNull StatecraftComponent statecraftComponent, @NonNull Store<EntityStore> store, @NonNull CommandBuffer<EntityStore> commandBuffer) {
         var world = store.getExternalData().getWorld();
         var table = Util.getCharacterTable();
 
-        var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-        if (playerRef == null) return;
-        LOGGER.atFine().log("Added Statecraft Component to player %s", playerRef.getUsername());
-        var currentModel = store.getComponent(ref, PlayerSkinComponent.getComponentType()).getPlayerSkin();
 
-        Util.UUID_TO_SKIN.put(playerRef.getUuid(), currentModel.clone());
         world.execute(() -> {
+            var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+            if (playerRef == null) return;
+            LOGGER.atInfo().log("Added Statecraft Component to player %s", playerRef.getUsername());
+            var currentModel = store.getComponent(ref, PlayerSkinComponent.getComponentType()).getPlayerSkin();
+
+            Util.UUID_TO_SKIN.put(playerRef.getUuid(), currentModel.clone());
             // Load that player's characters
             var player = store.getComponent(ref, Player.getComponentType());
             if (!playerRef.isValid()) return;
@@ -75,18 +87,18 @@ public class StatecraftComponentAddedSystem extends RefSystem<EntityStore> {
                 }
             }
             if (id != -1)
-                CharacterOperations.switchCharacters(ref, id);
+                CharacterOperations.switchCharactersNoTeleport(ref, id);
             world.execute(() -> CharacterOperations.refreshModel(ref, store));
         });
     }
 
     @Override
-    public void onEntityRemove(@NonNull Ref<EntityStore> ref, @NonNull RemoveReason removeReason, @NonNull Store<EntityStore> store, @NonNull CommandBuffer<EntityStore> commandBuffer) {
+    public void onComponentSet(@NonNull Ref<EntityStore> ref, @Nullable StatecraftComponent statecraftComponent, @NonNull StatecraftComponent t1, @NonNull Store<EntityStore> store, @NonNull CommandBuffer<EntityStore> commandBuffer) {
 
     }
 
     @Override
-    public @Nullable Query<EntityStore> getQuery() {
-        return Query.and(StatecraftMod.STATECRAFT_COMPONENT);
+    public void onComponentRemoved(@NonNull Ref<EntityStore> ref, @NonNull StatecraftComponent statecraftComponent, @NonNull Store<EntityStore> store, @NonNull CommandBuffer<EntityStore> commandBuffer) {
+
     }
 }

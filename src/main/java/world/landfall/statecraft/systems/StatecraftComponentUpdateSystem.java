@@ -29,6 +29,7 @@ public class StatecraftComponentUpdateSystem extends DelayedEntitySystem<EntityS
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public StatecraftComponentUpdateSystem() {
         super(StatecraftConfig.SYNC_INTERVAL_SECONDS.get());
+
     }
 
     @Override
@@ -37,7 +38,7 @@ public class StatecraftComponentUpdateSystem extends DelayedEntitySystem<EntityS
         if (!ref.isValid()) return;
         var player = store.getComponent(ref, PlayerRef.getComponentType());
         if (player == null) return;
-        LOGGER.atFine().log("Refreshing data for player %s", player.getUsername());
+        LOGGER.atInfo().log("Refreshing data for player %s", player.getUsername());
 
         var world = store.getExternalData().getWorld();
 
@@ -48,6 +49,7 @@ public class StatecraftComponentUpdateSystem extends DelayedEntitySystem<EntityS
         if (characterComponent != null) {
             // Are we in a glitched state? Get that component outa here, it'll break shit
             if (!table.containsKey(characterComponent.character.getCharacterId())) {
+                LOGGER.atSevere().log("Player %s has a character component, but that character does not exist! Removing component...", player.getUsername());
                 world.execute(() -> store.removeComponent(ref, StatecraftMod.CHARACTER_COMPONENT));
                 return;
             }

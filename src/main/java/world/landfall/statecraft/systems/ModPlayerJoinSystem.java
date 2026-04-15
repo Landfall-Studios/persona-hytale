@@ -25,6 +25,7 @@ public class ModPlayerJoinSystem extends RefSystem<EntityStore> {
 
         commandBuffer.ensureComponent(ref, StatecraftMod.STATECRAFT_COMPONENT);
 
+
     }
 
     @Override

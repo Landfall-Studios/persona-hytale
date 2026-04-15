@@ -10,6 +10,7 @@ import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class Util {
     public static final HashMap<UUID, PlayerSkin> UUID_TO_SKIN = new HashMap<>();
@@ -19,5 +20,8 @@ public class Util {
         var world = universe.getWorld(World.DEFAULT);
         var chunkStore = world.getChunkStore().getStore();
         return chunkStore.getResource(StatecraftMod.STATECRAFT_PLAYER_TABLE_RESOURCE).TABLE;
+    }
+    public static void runDelayed(float seconds, World world, Runnable runnable) {
+        HytaleServer.SCHEDULED_EXECUTOR.schedule(() -> world.execute(runnable), (long)(seconds * 1000), TimeUnit.MILLISECONDS);
     }
 }
