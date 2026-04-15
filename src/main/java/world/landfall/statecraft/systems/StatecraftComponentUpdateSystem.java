@@ -5,6 +5,7 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.DelayedEntitySystem;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.PlayerSkinUpdate;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.model.config.Model;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Random;
 
 public class StatecraftComponentUpdateSystem extends DelayedEntitySystem<EntityStore> {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     public StatecraftComponentUpdateSystem() {
         super(StatecraftConfig.SYNC_INTERVAL_SECONDS.get());
     }
@@ -35,6 +37,8 @@ public class StatecraftComponentUpdateSystem extends DelayedEntitySystem<EntityS
         if (!ref.isValid()) return;
         var player = store.getComponent(ref, PlayerRef.getComponentType());
         if (player == null) return;
+        LOGGER.atFine().log("Refreshing data for player %s", player.getUsername());
+
         var world = store.getExternalData().getWorld();
 
         var api = StatecraftMod.api;

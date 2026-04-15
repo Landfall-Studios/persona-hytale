@@ -169,12 +169,14 @@ public class CharacterOperations {
 
         var playerRef = store.getComponent(player, PlayerRef.getComponentType());
         if (!world.getName().equals(World.DEFAULT)) {
+            LOGGER.atWarning().log("Player %s tried to mark a character deceased while not in DEFAULT.", playerRef.getUsername());
             playerRef.sendMessage(Message.raw("Can't perform character actions outside of Orbis!").color(Color.RED));
             return;
         };
         var result = StatecraftMod.api.getCharactersByPlayer(playerRef.getUuid());
         if (result.isFailure())  {
-            //TODO handle API fail
+            playerRef.sendMessage(Message.raw("Server API timed out!"));
+            LOGGER.atSevere().log("Statecraft API failed to resolve characters for player %s!", playerRef.getUsername());
             return;
         }
         var characters = result.getValue().get();
@@ -186,8 +188,9 @@ public class CharacterOperations {
             }
         }
         if (suitableReplacementCharacter == null) {
-            //TODO handle doesn't have a replacement character
+            LOGGER.atInfo().log("Player %s no longer has a character!", playerRef.getUsername());
             StatecraftMod.api.markDeceased(characterId, characterData.getDisplayName());
+            store.removeComponent(player, StatecraftMod.CHARACTER_COMPONENT);
             if (StatecraftConfig.ENABLE_NAME_SYSTEM.get())
                 store.removeComponent(player, Nameplate.getComponentType());
             return;
@@ -198,16 +201,22 @@ public class CharacterOperations {
     public static void setModel(Ref<EntityStore> ref, ComponentAccessor<EntityStore> store, long characterId) {
         var world = ref.getStore().getExternalData().getWorld();
         var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+        if (playerRef == null || playerRef.isValid()) return;
+        LOGGER.atFine().log("Uploading model for player %s and character %d", playerRef.getUsername(), characterId);
         if (!world.getName().equals(World.DEFAULT)) {
+            LOGGER.atWarning().log("Player %s tried to set a character model while not in DEFAULT.", playerRef.getUsername());
             playerRef.sendMessage(Message.raw("Can't perform character actions outside of Orbis!").color(Color.RED));
             return;
         };
         var chunkStore = world.getChunkStore().getStore();
         var table = Util.getCharacterTable();
         var characterData = table.get(characterId);
-        if (characterData == null) return;
+        if (characterData == null) {
+            LOGGER.atSevere().log("Tried to set model for character %d, but that character isn't in the table!", characterId);
+            return;
+        }
         var currentModel = store.getComponent(ref, PlayerSkinComponent.getComponentType());
-        var newModel = Util.UUID_TO_SKIN.getOrDefault(playerRef.getUuid(), currentModel.getPlayerSkin());
+        var newModel = Util.UUID_TO_SKIN.getOrDefault(playerRef.getUuid(), currentModel.getPlayerSkin()).clone();
         store.putComponent(ref, ModelComponent.getComponentType(), new ModelComponent(CosmeticsModule.get().createModel(newModel)));
         store.putComponent(ref, PlayerSkinComponent.getComponentType(), new PlayerSkinComponent(newModel));
         table.put(characterId, new StatecraftCharacterTableResource.LocalCharacterData(
@@ -219,19 +228,32 @@ public class CharacterOperations {
     public static void refreshModel(Ref<EntityStore> ref, ComponentAccessor<EntityStore> store) {
         var world = ref.getStore().getExternalData().getWorld();
         var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+        if (playerRef == null || !playerRef.isValid()) return;
+        LOGGER.atFine().log("Refreshing model for player %s", playerRef.getUsername());
         var chunkStore = world.getChunkStore().getStore();
         var characterComponent = store.getComponent(ref, StatecraftMod.CHARACTER_COMPONENT);
         var table = Util.getCharacterTable();
+        var oldSkin = Util.UUID_TO_SKIN.get(playerRef.getUuid());
+        if (characterComponent == null) {
+            LOGGER.atWarning().log("Can't refresh model for player %s because there is no character component!", playerRef.getUsername());
+            var cosmetics = CosmeticsModule.get();
+            Model newModel = cosmetics.createModel(oldSkin);
+            store.putComponent(ref, ModelComponent.getComponentType(), new ModelComponent(newModel));
+            store.putComponent(ref, PlayerSkinComponent.getComponentType(), new PlayerSkinComponent(oldSkin));
+            return;
+        }
         var characterData = table.get(characterComponent.character.getCharacterId());
         var currentData = table.get(characterComponent.character.getCharacterId());
         var currentModel = store.getComponent(ref, PlayerSkinComponent.getComponentType());
         var alreadyHasModel = currentData.playerSkin.bodyCharacteristic != null && !currentData.playerSkin.bodyCharacteristic.isEmpty();
-        table.put(characterComponent.character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
-                currentData.inventory, currentData.stats, alreadyHasModel ? currentData.playerSkin : currentModel.getPlayerSkin(), currentData.position, currentData.icon
-        ));
+        if (alreadyHasModel)
+            LOGGER.atFine().log("Character already has a model");
+        else
+            table.put(characterComponent.character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
+                currentData.inventory, currentData.stats, oldSkin, currentData.position, currentData.icon
+            ));
         var cosmetics = CosmeticsModule.get();
-        Model newModel = !alreadyHasModel ? cosmetics.createModel(currentModel.getPlayerSkin()) : cosmetics.createModel(characterData.playerSkin);
-        Util.UUID_TO_SKIN.computeIfAbsent(playerRef.getUuid(), (a) -> currentModel.getPlayerSkin().clone());
+        Model newModel = !alreadyHasModel ? cosmetics.createModel(oldSkin) : cosmetics.createModel(characterData.playerSkin);
         store.putComponent(ref, ModelComponent.getComponentType(), new ModelComponent(newModel));
         store.putComponent(ref, PlayerSkinComponent.getComponentType(), new PlayerSkinComponent(characterData.playerSkin));
     }
