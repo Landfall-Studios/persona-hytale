@@ -4,6 +4,9 @@ import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.RefSystem;
 import com.hypixel.hytale.protocol.PlayerSkin;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.command.commands.server.KickCommand;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.movement.MovementManager;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.container.SimpleItemContainer;
@@ -17,6 +20,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import world.landfall.statecraft.StatecraftMod;
 import world.landfall.statecraft.components.StatecraftComponent;
+import world.landfall.statecraft.config.StatecraftConfig;
 import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 import world.landfall.statecraft.util.CharacterOperations;
 import world.landfall.statecraft.util.Util;
@@ -32,14 +36,23 @@ public class StatecraftComponentAddedSystem extends RefSystem<EntityStore> {
 
         world.execute(() -> {
             // Load that player's characters
+            var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
+            var player = store.getComponent(ref, Player.getComponentType());
+            if (playerRef == null || !playerRef.isValid()) return;
             var characterComponent = store.getComponent(ref, StatecraftMod.CHARACTER_COMPONENT);
+
+            if (characterComponent == null) {
+                var requireCharacter = StatecraftConfig.REQUIRE_CHARACTER_ON_JOIN.get();
+                if (requireCharacter) {
+                    playerRef.getPacketHandler().disconnect(Message.raw("This server requires you to set up a character before joining!"));
+                }
+                return;
+            }
             if (!table.containsKey(characterComponent.character.getCharacterId())) {
                 store.removeComponent(ref, StatecraftMod.CHARACTER_COMPONENT);
 
                 return;
             }
-            var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-            if (playerRef == null || !playerRef.isValid()) return;
             var stats = store.getComponent(ref, EntityStatMap.getComponentType());
             var currentModel = store.getComponent(ref, PlayerSkinComponent.getComponentType()).getPlayerSkin();
             if (!ref.isValid()) return;

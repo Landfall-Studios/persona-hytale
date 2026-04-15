@@ -69,6 +69,7 @@ public class UtilCodecs {
         }
         private static void applyInventory(ItemContainer from, ItemContainer to) {
             var size = Math.min(from.getCapacity(), to.getCapacity());
+            to.clear();
             for (short i = 0; i < size; i++) {
                 to.setItemStackForSlot(i, from.getItemStack(i));
             }

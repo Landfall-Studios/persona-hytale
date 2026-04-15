@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.model.config.Model;
 import com.hypixel.hytale.server.core.cosmetics.CosmeticsModule;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.nameplate.Nameplate;
 import com.hypixel.hytale.server.core.inventory.InventoryComponent;
 import com.hypixel.hytale.server.core.inventory.container.CombinedItemContainer;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
@@ -27,6 +28,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import world.landfall.statecraft.StatecraftMod;
 import world.landfall.statecraft.api.StatecraftCharacter;
 import world.landfall.statecraft.components.CharacterComponent;
+import world.landfall.statecraft.config.StatecraftConfig;
 import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 
 import java.awt.*;
@@ -47,10 +49,23 @@ public class CharacterOperations {
             return null;
         }
 //        AtomicBoolean keepGoing = new AtomicBoolean(true);
-        if (StatecraftMod.api.getCharactersByPlayer(playerRef.getUuid()).getValue().get().stream().anyMatch(c -> c.getDisplayName().equals(name))) {
+        var currentCharacters = StatecraftMod.api.getCharactersByPlayer(playerRef.getUuid());
+        if (currentCharacters.isSuccess() && currentCharacters.getValue().get().stream().anyMatch(c -> c.getDisplayName().equals(name))) {
             playerRef.sendMessage(Message.raw("Could not create character: Character by this name already exists!").color(Color.RED));
             return null;
         }
+
+        if (currentCharacters.isSuccess() && currentCharacters.getValue().get().size() >= StatecraftConfig.MAX_CHARACTERS_PER_PLAYER.get()) {
+            playerRef.sendMessage(Message.raw("You have reached your character limit!").color(Color.RED));
+            return null;
+        }
+        var nameValidationRegex = StatecraftConfig.NAME_VALIDATION_REGEX.get();
+        if (!nameValidationRegex.isEmpty() && !name.matches(nameValidationRegex)) {
+            playerRef.sendMessage(Message.raw("You must follow the naming rules!").color(Color.RED));
+            playerRef.sendMessage(Message.raw("First name + last name").color(Color.RED));
+
+        }
+
         var result = StatecraftMod.api.recordCharacter(playerRef.getUuid(), name);
         var store = player.getStore();
         var skin = store.getComponent(player, PlayerSkinComponent.getComponentType());
@@ -86,7 +101,11 @@ public class CharacterOperations {
             var temp = characterAPIData.getValue().get().get();
             if (temp.isDeceased()) {
                 playerRef.sendMessage(Message.raw("Character is deceased!").color(Color.RED));
+                return false;
             }
+            if (StatecraftConfig.ENABLE_NAME_SYSTEM.get())
+                entityStore.putComponent(player, Nameplate.getComponentType(), new Nameplate(temp.getDisplayName()));
+
         }
 
         var stats = entityStore.getComponent(player, EntityStatMap.getComponentType());
@@ -168,6 +187,9 @@ public class CharacterOperations {
         }
         if (suitableReplacementCharacter == null) {
             //TODO handle doesn't have a replacement character
+            StatecraftMod.api.markDeceased(characterId, characterData.getDisplayName());
+            if (StatecraftConfig.ENABLE_NAME_SYSTEM.get())
+                store.removeComponent(player, Nameplate.getComponentType());
             return;
         }
         StatecraftMod.api.markDeceased(characterId, characterData.getDisplayName());

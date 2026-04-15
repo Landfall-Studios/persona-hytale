@@ -10,6 +10,8 @@ import com.hypixel.hytale.protocol.packets.interface_.Page;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.ui.PatchStyle;
+import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -20,9 +22,26 @@ import world.landfall.statecraft.StatecraftMod;
 import world.landfall.statecraft.components.CharacterComponent;
 import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 import world.landfall.statecraft.util.CharacterOperations;
+import world.landfall.statecraft.resources.StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon;
+
+import java.util.HashMap;
 
 public class CharacterCreateMenuUI extends InteractiveCustomUIPage<CharacterCreateMenuUI.Data> {
-    private StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon currentIcon = StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.ANGEL;
+    private CharacterIcon currentIcon = CharacterIcon.ANGEL;
+
+    private static final HashMap<CharacterIcon, String> ICON_TEXTURES;
+    static {
+        ICON_TEXTURES = new HashMap<>();
+        ICON_TEXTURES.put(CharacterIcon.ANGEL, "angel_icon.png");
+        ICON_TEXTURES.put(CharacterIcon.CAT, "cat_icon.png");
+        ICON_TEXTURES.put(CharacterIcon.ELF, "elf_icon.png");
+        ICON_TEXTURES.put(CharacterIcon.FOX, "fox_icon.png");
+        ICON_TEXTURES.put(CharacterIcon.HEART, "heart_icon.png");
+        ICON_TEXTURES.put(CharacterIcon.ORC, "orc_icon.png");
+        ICON_TEXTURES.put(CharacterIcon.POTION, "potion_icon.png");
+        ICON_TEXTURES.put(CharacterIcon.SKULL, "skull_icon.png");
+        ICON_TEXTURES.put(CharacterIcon.SWORD, "sword_icon.png");
+    }
     public static class Data {
 
 
@@ -84,7 +103,7 @@ public class CharacterCreateMenuUI extends InteractiveCustomUIPage<CharacterCrea
             }
             case SWAP_ICON -> {
                 var ordinal = this.currentIcon.ordinal();
-                this.currentIcon = StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.values()[(ordinal+1)% StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.values().length];
+                this.currentIcon = CharacterIcon.values()[(ordinal+1) % CharacterIcon.values().length];
                 refreshIcon();
             }
         }
@@ -93,7 +112,8 @@ public class CharacterCreateMenuUI extends InteractiveCustomUIPage<CharacterCrea
     }
     private void refreshIcon() {
         var command = new UICommandBuilder();
-        command.set("#Root #Panel #Left #Icon.Background", "#"+(this.currentIcon.ordinal()+"").repeat(6));
+        var patchStyle = new PatchStyle(Value.of(ICON_TEXTURES.get(currentIcon)));
+        command.setObject("#Root #Panel #Left #Icon.Background", patchStyle);
         sendUpdate(command);
     }
 

@@ -36,12 +36,12 @@ public class StatecraftConfig {
     public static final Supplier<String> NAME_VALIDATION_REGEX = configValue("name_validation_regex", ConfigType.STRING, "");
     public static final Supplier<Boolean> REQUIRE_CHARACTER_ON_JOIN = configValue("require_character_on_join", ConfigType.BOOLEAN, false);
 
-    // Feature Toggles
+    // Feature Toggles TODO implement
     public static final Supplier<Boolean> ENABLE_INVENTORY_FEATURE = configValue("enable_inventory_feature", ConfigType.BOOLEAN, true);
     public static final Supplier<Boolean> ENABLE_LOCATION_FEATURE = configValue("enable_location_feature", ConfigType.BOOLEAN, true);
     public static final Supplier<Boolean> ENABLE_AGING_FEATURE = configValue("enable_aging_feature", ConfigType.BOOLEAN, true);
 
-    // Display Name System Configuration
+    // Display Name System Configuration TODO I think we're doing this in Verbatim instead
     public static final Supplier<Boolean> ENABLE_NAME_SYSTEM = configValue("enable_name_system", ConfigType.BOOLEAN, true);
 //    public static final Supplier<Boolean> SHOW_USERNAME_IN_TABLIST = configValue("show_username_in_tablist"); TODO recreate this system for /list
 //    public static final Supplier<String> TABLIST_NAME_COLOR = configValue("");

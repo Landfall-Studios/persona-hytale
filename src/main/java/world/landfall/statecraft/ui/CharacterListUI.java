@@ -10,6 +10,8 @@ import com.hypixel.hytale.protocol.packets.interface_.Page;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.CustomUIPage;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
+import com.hypixel.hytale.server.core.ui.PatchStyle;
+import com.hypixel.hytale.server.core.ui.Value;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
@@ -17,10 +19,26 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.jspecify.annotations.NonNull;
 import world.landfall.statecraft.StatecraftMod;
+import world.landfall.statecraft.resources.StatecraftCharacterTableResource;
 import world.landfall.statecraft.util.CharacterOperations;
 import world.landfall.statecraft.util.Util;
 
+import java.util.HashMap;
+
 public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Data> {
+    private static final HashMap<StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon, String> ICON_TEXTURES;
+    static {
+        ICON_TEXTURES = new HashMap<>();
+        ICON_TEXTURES.put(StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.ANGEL, "angel_icon.png");
+        ICON_TEXTURES.put(StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.CAT, "cat_icon.png");
+        ICON_TEXTURES.put(StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.ELF, "elf_icon.png");
+        ICON_TEXTURES.put(StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.FOX, "fox_icon.png");
+        ICON_TEXTURES.put(StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.HEART, "heart_icon.png");
+        ICON_TEXTURES.put(StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.ORC, "orc_icon.png");
+        ICON_TEXTURES.put(StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.POTION, "potion_icon.png");
+        ICON_TEXTURES.put(StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.SKULL, "skull_icon.png");
+        ICON_TEXTURES.put(StatecraftCharacterTableResource.LocalCharacterData.CharacterIcon.SWORD, "sword_icon.png");
+    }
     public static class Data {
         enum ButtonAction {
             EQUIP, MARK_DECEASED, CREATE, COLLECT, UPLOAD_SKIN
@@ -45,10 +63,11 @@ public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Dat
         uiCommandBuilder.append("CharacterList.ui");
         var characterList = CharacterOperations.getCharacters(ref);
         characterList.forEach(c -> {
+            var table = Util.getCharacterTable();
             if (c.isDeceased()) {
-                var table = Util.getCharacterTable();
                 if (!table.containsKey(c.getCharacterId())) return;
             }
+            var characterData = table.get(c.getCharacterId());
             uiCommandBuilder.appendInline("#Root #Characters", """
                     $C = "Common.ui";
                    
@@ -87,6 +106,9 @@ public class CharacterListUI extends InteractiveCustomUIPage<CharacterListUI.Dat
                         new EventData().append("Character", c.getCharacterId() + "").append("Action", "UPLOAD_SKIN")
                 );
             }
+
+            var patchStyle = new PatchStyle(Value.of(ICON_TEXTURES.get(characterData.icon)));
+            uiCommandBuilder.setObject("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #Icon.Background", patchStyle);
             uiCommandBuilder.set("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #Text #NameText.Text", c.getDisplayName());
             uiCommandBuilder.set("#Root #Characters #Border"+c.getCharacterId()+" #Character"+c.getCharacterId()+" #Text #IDText.Text", "ID: "+c.getCharacterId());
 

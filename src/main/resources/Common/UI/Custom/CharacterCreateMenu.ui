@@ -11,7 +11,7 @@ $C.@Container #Root {
             LayoutMode: Middle;
             Group #Icon {
                 Anchor: (Width: 100, Height: 100);
-                Background: #FFFFFF;
+                Background: PatchStyle(TexturePath: "sword_icon.png");
             }
             Group #SwapIconButtonWrapper {
                 Anchor: (Width: 50, Height: 50);
