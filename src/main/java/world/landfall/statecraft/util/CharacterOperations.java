@@ -72,11 +72,11 @@ public class CharacterOperations {
 
         var result = StatecraftMod.api.recordCharacter(playerRef.getUuid(), name);
         var store = player.getStore();
-        var skin = store.getComponent(player, PlayerSkinComponent.getComponentType());
+        var skin = Util.UUID_TO_SKIN.get(playerRef.getUuid());
         if (result.isSuccess()) {
             var character = result.getOrThrow();
             table.put(character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
-                    new UtilCodecs.PlayerInventory(), new EntityStatMap(), skin.getPlayerSkin(), playerRef.getTransform().getPosition(), icon
+                    new UtilCodecs.PlayerInventory(), new EntityStatMap(),skin.clone(), playerRef.getTransform().getPosition(), icon
             ));
             switchCharacters(player, character.getCharacterId());
         } else {
