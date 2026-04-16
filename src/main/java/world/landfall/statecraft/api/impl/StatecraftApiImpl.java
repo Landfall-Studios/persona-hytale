@@ -138,12 +138,12 @@ public class StatecraftApiImpl implements StatecraftApi {
     }
 
     @Override
-    public ApiResult<Optional<StatecraftCharacter>> getCharacterById(long characterId) {
+    public ApiResult<StatecraftCharacter> getCharacterById(long characterId) {
         String endpoint = "/players/id/" + characterId;
 
         return executeWithRetry("GET", endpoint, null, response -> {
             JsonObject json = GSON.fromJson(response, JsonObject.class);
-            return Optional.of(parseCharacter(json));
+            return parseCharacter(json);
         });
     }
 

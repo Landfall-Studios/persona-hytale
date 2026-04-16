@@ -41,7 +41,7 @@ public interface StatecraftApi {
      * @param characterId The Statecraft character ID
      * @return The character, or empty if not found
      */
-    ApiResult<Optional<StatecraftCharacter>> getCharacterById(long characterId);
+    ApiResult<StatecraftCharacter> getCharacterById(long characterId);
 
     /**
      * Gets all nations currently in the database.

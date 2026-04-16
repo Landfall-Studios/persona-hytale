@@ -107,7 +107,7 @@ public class CharacterOperations {
             playerRef.sendMessage(Message.raw("Could not access character in ScAPI!").color(Color.RED));
             return false;
         } else {
-            var temp = characterAPIData.getValue().get().get();
+            var temp = characterAPIData.getValue().get();
             if (temp.isDeceased()) {
                 playerRef.sendMessage(Message.raw("Character is deceased!").color(Color.RED));
                 return false;
@@ -183,10 +183,16 @@ public class CharacterOperations {
     public static void markCharacterDeceased(Ref<EntityStore> player, ComponentAccessor<EntityStore> store, long characterId) {
         var world = store.getExternalData().getWorld();
         var table = Util.getCharacterTable();
-        //TODO handle character doesn't exist
-        var characterData = StatecraftMod.api.getCharacterById(characterId).getValue().get().get();
-
+        var characterResult = StatecraftMod.api.getCharacterById(characterId).getValue();
         var playerRef = store.getComponent(player, PlayerRef.getComponentType());
+        if (playerRef == null) return;
+        if (characterResult.isEmpty()) {
+            LOGGER.atSevere().log("Player %s tried to mark character %s as deceased, but that character does not exist!");
+            playerRef.sendMessage(Message.raw("That character does not exist!").color(Color.RED));
+            return;
+        }
+        var characterData = characterResult.get();
+
         if (!world.getName().equals(World.DEFAULT)) {
             LOGGER.atWarning().log("Player %s tried to mark a character deceased while not in DEFAULT.", playerRef.getUsername());
             playerRef.sendMessage(Message.raw("Can't perform character actions outside of Orbis!").color(Color.RED));
