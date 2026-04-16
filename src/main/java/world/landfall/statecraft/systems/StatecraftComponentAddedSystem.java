@@ -99,6 +99,20 @@ public class StatecraftComponentAddedSystem extends RefChangeSystem<EntityStore,
 
     @Override
     public void onComponentRemoved(@NonNull Ref<EntityStore> ref, @NonNull StatecraftComponent statecraftComponent, @NonNull Store<EntityStore> store, @NonNull CommandBuffer<EntityStore> commandBuffer) {
+        var table = Util.getCharacterTable();
+        var characterComponent = store.getComponent(ref, StatecraftMod.CHARACTER_COMPONENT);
+        if (characterComponent == null) return;
+        var transform = store.getComponent(ref, TransformComponent.getComponentType());
+        if (transform == null) return;
+        var characterData = table.get(characterComponent.character.getCharacterId());
+        if (characterData == null) return;
+        table.put(characterComponent.character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
+                UtilCodecs.PlayerInventory.fromPlayer(ref, store),
+                characterData.stats,
+                characterData.playerSkin,
+                transform.getPosition(),
+                characterData.icon
 
+        ));
     }
 }

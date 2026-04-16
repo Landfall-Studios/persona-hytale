@@ -55,22 +55,24 @@ public class CharacterOperations {
             playerRef.sendMessage(Message.raw("Could not create character: Character by this name already exists!").color(Color.RED));
             return null;
         }
+        var table = Util.getCharacterTable();
 
-        if (currentCharacters.isSuccess() && currentCharacters.getValue().get().size() >= StatecraftConfig.MAX_CHARACTERS_PER_PLAYER.get()) {
+        if (currentCharacters.isSuccess() && currentCharacters.getValue().get().stream().filter(c -> table.entrySet().stream().anyMatch(entry -> entry.getKey() == c.getCharacterId())).toList().size() >= StatecraftConfig.MAX_CHARACTERS_PER_PLAYER.get()) {
+
             playerRef.sendMessage(Message.raw("You have reached your character limit!").color(Color.RED));
             return null;
         }
         var nameValidationRegex = StatecraftConfig.NAME_VALIDATION_REGEX.get();
         if (!nameValidationRegex.isEmpty() && !name.matches(nameValidationRegex)) {
             playerRef.sendMessage(Message.raw("You must follow the naming rules!").color(Color.RED));
-            playerRef.sendMessage(Message.raw("First name + last name").color(Color.RED));
+            playerRef.sendMessage(Message.raw("Requirements: First name and last name properly capitalized.").color(Color.YELLOW));
+            return null;
 
         }
 
         var result = StatecraftMod.api.recordCharacter(playerRef.getUuid(), name);
         var store = player.getStore();
         var skin = store.getComponent(player, PlayerSkinComponent.getComponentType());
-        var table = Util.getCharacterTable();
         if (result.isSuccess()) {
             var character = result.getOrThrow();
             table.put(character.getCharacterId(), new StatecraftCharacterTableResource.LocalCharacterData(
@@ -96,7 +98,7 @@ public class CharacterOperations {
         var playerTransform = entityStore.getComponent(player, TransformComponent.getComponentType());
         var playerPos = playerTransform.getPosition().clone();
         var characterComponent = entityStore.getComponent(player, StatecraftMod.CHARACTER_COMPONENT);
-        if (characterComponent.character.getCharacterId() == characterId) {
+        if (characterComponent != null && characterComponent.character.getCharacterId() == characterId) {
             playerRef.sendMessage(Message.raw("You are already using that character!"));
             return false;
         }
@@ -207,7 +209,19 @@ public class CharacterOperations {
         if (suitableReplacementCharacter == null) {
             LOGGER.atInfo().log("Player %s no longer has a character!", playerRef.getUsername());
             StatecraftMod.api.markDeceased(characterId, characterData.getDisplayName());
+            var characterComponent = store.getComponent(player, StatecraftMod.CHARACTER_COMPONENT);
             store.removeComponent(player, StatecraftMod.CHARACTER_COMPONENT);
+            var transform = store.getComponent(player, TransformComponent.getComponentType());
+            if (transform == null) return;
+            if (characterComponent == null) return;
+            table.computeIfPresent(characterComponent.character.getCharacterId(), (k, characterTableData) -> new StatecraftCharacterTableResource.LocalCharacterData(
+                    UtilCodecs.PlayerInventory.fromPlayer(player, store),
+                    characterTableData.stats,
+                    characterTableData.playerSkin,
+                    transform.getPosition(),
+                    characterTableData.icon
+            ));
+            new UtilCodecs.PlayerInventory().applyToPlayer(player, store);
             if (StatecraftConfig.ENABLE_NAME_SYSTEM.get())
                 store.removeComponent(player, Nameplate.getComponentType());
             return;
@@ -218,7 +232,7 @@ public class CharacterOperations {
     public static void setModel(Ref<EntityStore> ref, ComponentAccessor<EntityStore> store, long characterId) {
         var world = ref.getStore().getExternalData().getWorld();
         var playerRef = store.getComponent(ref, PlayerRef.getComponentType());
-        if (playerRef == null || playerRef.isValid()) return;
+        if (playerRef == null || !playerRef.isValid()) return;
         LOGGER.atInfo().log("Uploading model for player %s and character %d", playerRef.getUsername(), characterId);
         if (!world.getName().equals(World.DEFAULT)) {
             LOGGER.atWarning().log("Player %s tried to set a character model while not in DEFAULT.", playerRef.getUsername());
